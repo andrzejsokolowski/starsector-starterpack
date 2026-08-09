@@ -167,9 +167,15 @@ object PickerOverlay {
                 addPara("Nothing matches that.", Misc.getGrayColor(), 8f)
                 return@scrollingElement
             }
+            // Truncation is measured against the real row width using the element's own font
+            // metrics. The first cut capped labels at 40 characters, which chopped every ability
+            // description mid-word while leaving most of the row empty.
+            val rowWidth = listWidth - 20f
             for (entry in shown) {
                 val isCurrent = entry.id == currentId
-                val row = checkboxRow(rowLabel(entry), isCurrent, listWidth - 20f, ROW_H, 1f) {
+                // Less the checkbox's own left/right inset, so the text stops short of the border
+                // rather than running into it.
+                val row = checkboxRow(fit(rowLabel(entry), rowWidth - 28f), isCurrent, rowWidth, ROW_H, 1f) {
                     val callback = onPick
                     SetupPanel.closePicker()
                     callback?.invoke(entry)
@@ -186,6 +192,12 @@ object PickerOverlay {
                     addPara("Source: %s", 2f, Misc.getBasePlayerColor(), entry.sourceMod)
                     if (entry.opCost > 0f) {
                         addPara("Ordnance points: %s", 2f, Misc.getHighlightColor(), formatOp(entry.opCost))
+                    }
+                    // The game's own text for the thing -- a hullmod's effect, a weapon's or hull's
+                    // blurb. The row can only ever show one truncated line, so the full wording lives
+                    // here where it has room to wrap.
+                    if (entry.description.isNotBlank() && entry.description != entry.secondary) {
+                        addPara(entry.description, Misc.getTextColor(), 6f)
                     }
                 }
             }
@@ -228,10 +240,30 @@ object PickerOverlay {
     private fun rowLabel(entry: CatalogEntry): String {
         val detail = listOfNotNull(
             entry.primary.takeIf { it.isNotBlank() && it != "-" },
-            entry.secondary.takeIf { it.isNotBlank() && it != "-" }?.take(40),
+            entry.secondary.takeIf { it.isNotBlank() && it != "-" },
         ).joinToString(" / ")
         val op = if (entry.opCost > 0f) "  [${formatOp(entry.opCost)} OP]" else ""
         return if (detail.isBlank()) "${entry.name}$op" else "${entry.name}   -   $detail$op"
+    }
+
+    /**
+     * Shortens a label to fit the row, measured rather than guessed.
+     *
+     * Victor is not monospaced, so a character count is not a width. This asks the element that will
+     * draw the text how wide it actually is, then converges in a couple of steps from a proportional
+     * first guess instead of calling `computeStringWidth` once per character.
+     */
+    private fun TooltipMakerAPI.fit(text: String, maxWidth: Float): String {
+        if (text.isEmpty()) return text
+        val full = runCatching { computeStringWidth(text) }.getOrDefault(0f)
+        if (full <= maxWidth || full <= 0f) return text
+        var keep = (text.length * maxWidth / full).toInt().coerceIn(1, text.length)
+        while (keep > 1 && runCatching { computeStringWidth(text.take(keep) + "...") }
+                .getOrDefault(0f) > maxWidth
+        ) {
+            keep--
+        }
+        return text.take(keep).trimEnd() + "..."
     }
 
     /** Costs are floats but almost always whole; show `12` rather than `12.0`. */

@@ -355,8 +355,9 @@ class Hotbar(
             for (bar in 0 until minOf(BARS, outer.length())) {
                 val inner = outer.optJSONArray(bar) ?: continue
                 for (slot in 0 until minOf(SLOTS_PER_BAR, inner.length())) {
-                    val id = inner.optString(slot, "").trim()
-                    grid[bar][slot] = id.ifBlank { null }
+                    // Via optIdOrNull, never optString -- see the note there on org.json returning
+                    // the string "null" for a JSON null.
+                    grid[bar][slot] = inner.optIdOrNull(slot)
                 }
             }
             return grid
@@ -386,8 +387,9 @@ private fun JSONArray?.toIdList(): MutableList<String> {
     val out = ArrayList<String>()
     val array = this ?: return out
     for (i in 0 until array.length()) {
-        val id = array.optString(i, "").trim()
-        if (id.isNotEmpty()) out += id
+        // Same null handling as the positional lists: these arrays are only ever written with real
+        // ids, but a hand-edited file is free to contain a null and must not turn it into an id.
+        array.optIdOrNull(i)?.let { out += it }
     }
     return out
 }
@@ -397,10 +399,28 @@ private fun JSONArray?.toNullableIdList(): MutableList<String?> {
     val out = ArrayList<String?>()
     val array = this ?: return out
     for (i in 0 until array.length()) {
-        val id = array.optString(i, "").trim()
-        out += id.ifBlank { null }
+        out += array.optIdOrNull(i)
     }
     return out
+}
+
+/**
+ * Reads one possibly-null entry out of a JSON array.
+ *
+ * **`optString` cannot be used here.** Starsector bundles a version of org.json whose
+ * `optString(index, default)` returns the literal four-character string `"null"` for a JSON null
+ * rather than the default -- verified against the game's own `json.jar`, for both parsed text and
+ * in-memory `JSONObject.NULL`. Positional lists (hotbar slots, fighter bays) are mostly nulls, so
+ * every empty slot came back as an ability or wing genuinely named `null`: a nine-ability hotbar
+ * loaded as fifty filled slots. `isNull` reports these correctly, so the check goes through that.
+ *
+ * The literal `"null"` is also rejected on the way in, so templates already written by the broken
+ * build heal themselves the first time they are loaded instead of needing to be rebuilt by hand.
+ */
+private fun JSONArray.optIdOrNull(index: Int): String? {
+    if (isNull(index)) return null
+    val id = optString(index, "").trim()
+    return if (id.isEmpty() || id == "null") null else id
 }
 
 private fun JSONObject?.toStringMap(): MutableMap<String, String> {

@@ -11,7 +11,7 @@ import starterpack.uiframework.Button
 import starterpack.uiframework.CustomPanel
 import starterpack.uiframework.Font
 import starterpack.uiframework.TooltipMakerPanel
-import starterpack.uiframework.anchorInBottomLeftOfParent
+import starterpack.uiframework.anchorInBottomRightOfParent
 import starterpack.uiframework.onClick
 
 /**
@@ -29,9 +29,9 @@ object MenuButton {
     /**
      * Padding from the screen edge.
      *
-     * Bottom-left with a lift: the vanilla menu column stops well above the bottom of the screen, and
-     * other title-screen mods tend to claim the exact corner, so sitting one button-height up keeps
-     * us clear of both.
+     * Bottom-**right**, one button-height up. The right corner is where the author's other
+     * title-screen mods live, and the lift keeps this clear of StopBloatingMe's DE-BLOAT button
+     * sitting in the corner itself.
      */
     private const val EDGE_PAD_X = 24f
     private const val EDGE_PAD_Y = 24f + BUTTON_HEIGHT + 8f
@@ -64,7 +64,7 @@ object MenuButton {
                 }
             }
         }
-        container.anchorInBottomLeftOfParent(EDGE_PAD_X, EDGE_PAD_Y)
+        container.anchorInBottomRightOfParent(EDGE_PAD_X, EDGE_PAD_Y)
         buttonPanel = container
     }
 

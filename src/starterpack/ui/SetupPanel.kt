@@ -77,6 +77,16 @@ object SetupPanel {
     private var saveNeeded = false
 
     /**
+     * Whether the caret was in one of our text fields last frame.
+     *
+     * Typing must not rebuild the view -- recreating a field mid-word drops the caret -- so a typed
+     * value reaches the model but nothing that *derives* from it (the OP budget, a clamped maximum)
+     * updates. Watching for the caret leaving gives a natural commit point: click away, or press
+     * Enter, and the view catches up.
+     */
+    private var wasFieldFocused = false
+
+    /**
      * Where each named scrolling region was left.
      *
      * Every structural edit rebuilds the whole content area, and a list that jumps back to the top
@@ -127,10 +137,15 @@ object SetupPanel {
             plugin.renderBelow { alpha -> drawBackdrop(plugin.customPanel, alpha) }
             plugin.advance { tick() }
             plugin.onKeyDown { event ->
-                // Escape closes the picker first, then the window -- the innermost thing wins, which
-                // is what every other modal in the game does.
-                if (event.eventValue == Keyboard.KEY_ESCAPE) {
-                    if (overlay != null) closePicker() else MenuButton.close()
+                when (event.eventValue) {
+                    // Escape closes the picker first, then the window -- the innermost thing wins,
+                    // which is what every other modal in the game does.
+                    Keyboard.KEY_ESCAPE -> if (overlay != null) closePicker() else MenuButton.close()
+                    // Enter is the other way people finish typing a number. Starsector text fields
+                    // keep focus through it, so without this the ordnance budget would sit stale
+                    // until you happened to click elsewhere.
+                    Keyboard.KEY_RETURN, Keyboard.KEY_NUMPADENTER ->
+                        if (bindings.anyFocused()) markDirty()
                 }
             }
 
@@ -187,7 +202,17 @@ object SetupPanel {
         // Text edits commit to the model as you type but only reach disk once you click away, so a
         // long name is one write rather than one per character.
         if (bindings.tick()) markSaveNeeded()
-        if (saveNeeded && !bindings.anyFocused()) {
+
+        val fieldFocused = bindings.anyFocused()
+        if (wasFieldFocused && !fieldFocused) {
+            // The caret just left a field. Everything derived from what was typed -- the ordnance
+            // budget, a value that got clamped to its maximum -- is stale until the view is rebuilt,
+            // and rebuilding was unsafe while the field had focus.
+            markDirty()
+        }
+        wasFieldFocused = fieldFocused
+
+        if (saveNeeded && !fieldFocused) {
             saveNeeded = false
             runCatching { TemplateStore.flush() }
         }

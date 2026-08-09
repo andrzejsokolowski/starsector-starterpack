@@ -16,6 +16,15 @@ object CharacterTab {
 
     private const val LABEL_W = 260f
 
+    /**
+     * Ceiling on the point grants.
+     *
+     * Not a game limit -- the engine will happily take more -- but a typo guard. These are text
+     * fields, and there is no meaningful difference between 999 free story points and 99999 except
+     * that one of them is what you meant to type.
+     */
+    private const val MAX_POINTS = 999
+
     fun build(host: CustomPanelAPI, width: Float, height: Float) {
         host.scrollRegion(0f, 0f, width, height, "character.body") { body(width - 24f) }
     }
@@ -46,27 +55,31 @@ object CharacterTab {
         addSectionHeading("Points", Alignment.MID, 14f)
         intRow(
             "Skill points", template.skillPoints, fieldWidth, SetupPanel.bindings,
-            min = 0, max = 999, step = 1, labelWidth = LABEL_W,
+            min = 0, max = MAX_POINTS, step = 1, labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() },
         ) { value ->
             template.skillPoints = value
             SetupPanel.markSaveNeeded()
         }
         addPara(
-            "Unspent points, granted on top of what you already have. Spend them in the character " +
-                "screen -- the template does not choose skills for you.",
-            Misc.getGrayColor(), 2f,
+            "Unspent points, granted on top of what you already have, up to %s. Spend them in the " +
+                "character screen -- the template does not choose skills for you.",
+            2f, Misc.getGrayColor(), Misc.getHighlightColor(), MAX_POINTS.toString(),
         )
 
         intRow(
             "Story points", template.storyPoints, fieldWidth, SetupPanel.bindings,
-            min = 0, max = 999, step = 1, labelWidth = LABEL_W,
+            min = 0, max = MAX_POINTS, step = 1, labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() },
         ) { value ->
             template.storyPoints = value
             SetupPanel.markSaveNeeded()
         }
-        addPara("Granted on top of your current story points.", Misc.getGrayColor(), 2f)
+        addPara(
+            "Granted on top of your current story points, up to %s. A larger number is clamped to " +
+                "that when you click away.",
+            2f, Misc.getGrayColor(), Misc.getHighlightColor(), MAX_POINTS.toString(),
+        )
 
         addSectionHeading("Level", Alignment.MID, 14f)
         textRow(

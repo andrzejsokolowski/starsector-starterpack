@@ -7,10 +7,13 @@ import com.fs.starfarer.api.combat.ShipAPI
 import com.fs.starfarer.api.combat.ShipHullSpecAPI
 import com.fs.starfarer.api.combat.WeaponAPI
 import com.fs.starfarer.api.impl.campaign.ids.Tags
+import com.fs.starfarer.api.impl.campaign.skills.FluxRegulation
+import com.fs.starfarer.api.loading.Description
 import com.fs.starfarer.api.loading.FighterWingSpecAPI
 import com.fs.starfarer.api.loading.HullModSpecAPI
 import com.fs.starfarer.api.loading.WeaponSlotAPI
 import com.fs.starfarer.api.loading.WeaponSpecAPI
+import com.fs.starfarer.api.plugins.impl.CoreAutofitPlugin
 
 /**
  * One pickable thing, flattened for the list UI.
@@ -29,6 +32,11 @@ class CatalogEntry(
     val sprite: String = "",
     /** Ordnance point cost where the concept applies (weapons, wings, hullmods), else 0. */
     val opCost: Float = 0f,
+    /**
+     * The game's own description text, shown in the picker's hover tooltip. Blank when the content
+     * type has none. Resolved at index time so hovering never has to go back to the spec.
+     */
+    val description: String = "",
 ) {
     val searchBlob: String = "$name $id $primary $secondary $sourceMod".lowercase()
 
@@ -120,6 +128,7 @@ object Catalog {
                 sourceMod = modName(spec.safeGet { sourceMod }),
                 sprite = spec.spriteName.orEmpty(),
                 opCost = spec.safeFloat { getOrdnancePoints(null).toFloat() },
+                description = describe(spec.hullId, Description.Type.SHIP),
             )
         }
         return out.sortedBy { it.name.lowercase() }
@@ -146,6 +155,7 @@ object Catalog {
                 // Turret art is the recognisable view; hardpoint-only weapons fall back to theirs.
                 sprite = spec.turretSpriteName.orEmpty().ifBlank { spec.hardpointSpriteName.orEmpty() },
                 opCost = spec.safeFloat { getOrdnancePointCost(null) },
+                description = describe(spec.weaponId, Description.Type.WEAPON),
             )
         }
         return out.sortedBy { it.name.lowercase() }
@@ -164,6 +174,9 @@ object Catalog {
                 // A wing has no art of its own; its single fighter's hull carries the sprite.
                 sprite = spec.safeGet { variant?.hullSpec?.spriteName }.orEmpty(),
                 opCost = spec.safeFloat { getOpCost(null) },
+                // A wing has no description of its own; the fighter hull it launches carries one.
+                description = spec.safeGet { variant?.hullSpec?.hullId }
+                    ?.let { describe(it, Description.Type.SHIP) }.orEmpty(),
             )
         }
         return out.sortedBy { it.name.lowercase() }
@@ -195,6 +208,10 @@ object Catalog {
                 sprite = spec.spriteName.orEmpty(),
                 // Cost is per hull size; the editor recomputes it against the actual hull.
                 opCost = spec.safeFloat { getCostFor(ShipAPI.HullSize.CRUISER).toFloat() },
+                // Hullmod descriptions are also per hull size, and the catalogue is shared across
+                // every ship, so this quotes the cruiser text -- the size only ever changes numbers
+                // inside the wording, never what the mod does.
+                description = spec.safeGet { getDescription(ShipAPI.HullSize.CRUISER) }.clean(blankIfMissing = true),
             )
         }
         return out.sortedBy { it.name.lowercase() }
@@ -267,13 +284,15 @@ object Catalog {
                 val row = rows.optJSONObject(i) ?: continue
                 val id = row.optString("id", "").trim()
                 if (id.isEmpty()) continue
+                val desc = row.optString("desc", "").trim()
                 out += CatalogEntry(
                     id = id,
                     name = row.optString("name", "").trim().ifBlank { id },
                     primary = row.optString("type", "").trim().ifBlank { UNSPECIFIED },
-                    secondary = row.optString("desc", "").trim(),
+                    secondary = desc,
                     sourceMod = VANILLA,          // the merged sheet does not carry a source column
                     sprite = row.optString("icon", "").trim(),
+                    description = desc,
                 )
             }
         }.onFailure {
@@ -359,14 +378,52 @@ object Catalog {
 
     // --- Labels --------------------------------------------------------------------------------
 
+    /**
+     * Whether a hull is something the player could own and fly.
+     *
+     * `UNDER_PARENT` is deliberately **not** a disqualifier. It is a render-order hint -- "draw this
+     * beneath its parent" -- not a statement about ownership. In vanilla the only hull carrying it is
+     * a high-tech strut, which is also tagged `MODULE` and so is excluded anyway; but mods put it on
+     * real ships (UAF's `uaf_m_machi_apa`, a civilian troop transport), and treating it as a filter
+     * made those ships silently unpickable while their combat siblings showed up fine.
+     */
     private fun isOwnableHull(spec: ShipHullSpecAPI): Boolean {
         val hints = spec.hints ?: return true
         if (hints.contains(ShipHullSpecAPI.ShipTypeHints.STATION)) return false
         if (hints.contains(ShipHullSpecAPI.ShipTypeHints.MODULE)) return false
-        if (hints.contains(ShipHullSpecAPI.ShipTypeHints.UNDER_PARENT)) return false
         if (spec.hullSize == ShipAPI.HullSize.FIGHTER) return false
         return true
     }
+
+    // --- Flux limits ---------------------------------------------------------------------------
+
+    /**
+     * The most vents or capacitors the refit screen would let you install on a hull this size.
+     *
+     * The base cap is per hull size, not per hull -- 50/30/20/10 from capital down to frigate. Flux
+     * Regulation raises it by a flat amount, and a template is authored long before we know which
+     * skills the character will have, so the allowance is included rather than assumed absent: an
+     * editor that refused a legal 25-vent destroyer would be wrong more annoyingly than one that
+     * permits an over-cap value the refit screen later trims.
+     *
+     * Read through the engine's own constants so it tracks a vanilla rebalance instead of hard-coding
+     * numbers that would quietly go stale.
+     */
+    fun maxFluxUpgrades(size: ShipAPI.HullSize?): Int {
+        val base = runCatching { CoreAutofitPlugin.getBaseMax(size ?: ShipAPI.HullSize.FRIGATE) }
+            .getOrDefault(DEFAULT_FLUX_CAP)
+        val skillAllowance = runCatching { maxOf(FluxRegulation.VENTS_BONUS, FluxRegulation.CAPACITORS_BONUS) }
+            .getOrDefault(0)
+        return base + skillAllowance
+    }
+
+    /** The cap before any skill raises it -- what the editor quotes to the player. */
+    fun baseFluxUpgradeCap(size: ShipAPI.HullSize?): Int =
+        runCatching { CoreAutofitPlugin.getBaseMax(size ?: ShipAPI.HullSize.FRIGATE) }
+            .getOrDefault(DEFAULT_FLUX_CAP)
+
+    /** Frigate-equivalent fallback for the case where the hull size cannot be read at all. */
+    private const val DEFAULT_FLUX_CAP = 10
 
     private val NON_MOUNTABLE_WEAPON_TYPES = setOf(
         WeaponAPI.WeaponType.BUILT_IN,
@@ -402,7 +459,23 @@ object Catalog {
 
     private fun modName(mod: ModSpecAPI?): String = mod?.name?.trim().orEmpty().ifBlank { VANILLA }
 
-    private fun String?.clean(): String = this?.trim().orEmpty().ifBlank { UNSPECIFIED }
+    private fun String?.clean(blankIfMissing: Boolean = false): String =
+        this?.trim().orEmpty().ifBlank { if (blankIfMissing) "" else UNSPECIFIED }
+
+    /**
+     * The flavour text the game keeps for a hull or weapon in `descriptions.csv`.
+     *
+     * The engine hands back a placeholder ("No description... yet") for anything undescribed, which
+     * is worse than showing nothing at all, so it is filtered out here rather than surfaced in a
+     * tooltip.
+     */
+    private fun describe(id: String, type: Description.Type): String {
+        val text = runCatching { Global.getSettings().getDescription(id, type)?.text1 }
+            .getOrNull()?.trim().orEmpty()
+        return if (text.isEmpty() || text.startsWith(NO_DESCRIPTION_PREFIX)) "" else text
+    }
+
+    private const val NO_DESCRIPTION_PREFIX = "No description"
 }
 
 // --- Spec-access helpers -------------------------------------------------------------------------

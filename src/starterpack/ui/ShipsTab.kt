@@ -7,9 +7,12 @@ import com.fs.starfarer.api.ui.Alignment
 import com.fs.starfarer.api.ui.CustomPanelAPI
 import com.fs.starfarer.api.ui.TooltipMakerAPI
 import com.fs.starfarer.api.util.Misc
+import com.fs.starfarer.api.loading.WeaponSlotAPI
 import starterpack.catalog.Catalog
 import starterpack.catalog.CatalogEntry
 import starterpack.catalog.CatalogKind
+import starterpack.catalog.safeBool
+import starterpack.catalog.safeGet
 import starterpack.model.ShipEntry
 import starterpack.model.Template
 
@@ -23,7 +26,7 @@ object ShipsTab {
 
     private const val GAP = 12f
     private const val LIST_W = 340f
-    private const val LABEL_W = 190f
+    private const val LABEL_W = 215f
 
     fun build(host: CustomPanelAPI, width: Float, height: Float) {
         val rightW = width - LIST_W - GAP
@@ -208,16 +211,27 @@ object ShipsTab {
                 DANGER, 2f,
             )
         }
-        intRow("Vents", ship.vents, inner, SetupPanel.bindings, max = 200, labelWidth = LABEL_W,
+        // The refit screen's own cap, which is per hull size rather than per hull. The headroom
+        // above the quoted base is the Flux Regulation allowance -- a template is written long
+        // before we know which skills the character will have, so a skilled build stays reachable.
+        val fluxCap = Catalog.maxFluxUpgrades(hullSize)
+        val baseFluxCap = Catalog.baseFluxUpgradeCap(hullSize)
+        intRow("Vents", ship.vents, inner, SetupPanel.bindings, max = fluxCap, labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() }) { value ->
             ship.vents = value
             SetupPanel.markSaveNeeded()
         }
-        intRow("Capacitors", ship.capacitors, inner, SetupPanel.bindings, max = 200, labelWidth = LABEL_W,
+        intRow("Capacitors", ship.capacitors, inner, SetupPanel.bindings, max = fluxCap,
+            labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() }) { value ->
             ship.capacitors = value
             SetupPanel.markSaveNeeded()
         }
+        addPara(
+            "A ${Catalog.sizeLabel(hullSize).lowercase()} takes %s of each in refit, or %s with Flux Regulation.",
+            2f, Misc.getGrayColor(), Misc.getHighlightColor(),
+            baseFluxCap.toString(), fluxCap.toString(),
+        )
 
         // --- Weapons ---
         val slots = Catalog.fittableSlots(ship.hullId)
@@ -226,9 +240,10 @@ object ShipsTab {
         if (slots.isEmpty()) {
             addPara("This hull has no weapon slots you can fit.", Misc.getGrayColor(), 4f)
         }
+        val slotLabels = slotLabels(slots)
         for (slot in slots) {
             val fitted = ship.weapons[slot.id]
-            val label = slotLabel(slot.slotSize?.displayName, slot.weaponType?.displayName, slot.id)
+            val label = slotLabels[slot.id] ?: slot.id
             pickerRow(
                 label,
                 fitted?.let { Catalog.nameOf(CatalogKind.WEAPON, it) } ?: "(empty)",
@@ -369,9 +384,43 @@ object ShipsTab {
     private fun canBuildIn(modId: String): Boolean =
         Catalog.hullModSpec(modId)?.let { Catalog.canBuildIn(it) } ?: false
 
-    private fun slotLabel(size: String?, type: String?, id: String): String {
-        val parts = listOfNotNull(size?.takeIf { it.isNotBlank() }, type?.takeIf { it.isNotBlank() })
-        return if (parts.isEmpty()) id else "${parts.joinToString(" ")} ($id)"
+    /**
+     * Human names for a hull's weapon slots, keyed by slot id.
+     *
+     * The raw slot id (`WS0001`) means nothing to anyone building a loadout -- it is an internal
+     * handle, and the refit screen never shows it. What actually distinguishes two slots to a player
+     * is size, mount type and *which one of the several identical ones* it is, so that is what this
+     * produces: "Medium Ballistic turret 2".
+     *
+     * The number is only added when a hull has more than one slot of that exact kind; a ship with a
+     * single large hardpoint gets "Large Ballistic hardpoint", not "... 1".
+     */
+    private fun slotLabels(slots: List<WeaponSlotAPI>): Map<String, String> {
+        fun kindOf(slot: WeaponSlotAPI): String {
+            val size = slot.safeGet { slotSize?.displayName }.orEmpty()
+            val type = slot.safeGet { weaponType?.displayName }.orEmpty()
+                .lowercase().replaceFirstChar { it.uppercase() }
+            val mount = when {
+                slot.safeBool { isHardpoint } -> "hardpoint"
+                slot.safeBool { isTurret } -> "turret"
+                else -> ""
+            }
+            return listOf(size, type, mount).filter { it.isNotBlank() }.joinToString(" ")
+        }
+
+        val totals = HashMap<String, Int>()
+        for (slot in slots) totals[kindOf(slot)] = (totals[kindOf(slot)] ?: 0) + 1
+
+        val seen = HashMap<String, Int>()
+        val out = LinkedHashMap<String, String>()
+        for (slot in slots) {
+            val kind = kindOf(slot)
+            val index = (seen[kind] ?: 0) + 1
+            seen[kind] = index
+            val name = kind.ifBlank { slot.id }
+            out[slot.id] = if ((totals[kind] ?: 0) > 1) "$name $index" else name
+        }
+        return out
     }
 
     /**
