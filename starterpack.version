@@ -1,0 +1,13 @@
+{
+    "masterVersionFile":"https://raw.githubusercontent.com/andrzejsokolowski/starsector-starterpack/main/starterpack.version",
+    "modName":"StarterPack",
+    "modThreadId":0,
+    "modVersion":
+    {
+        "major":0,
+        "minor":1,
+        "patch":"0"
+    },
+    "starsectorVersion":"0.98a-RC8",
+    "directDownloadURL":"https://github.com/andrzejsokolowski/starsector-starterpack/releases/latest/download/StarterPack.zip"
+}
