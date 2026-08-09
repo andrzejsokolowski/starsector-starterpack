@@ -96,7 +96,9 @@ object PickerOverlay {
 
             CustomPanel(innerWidth, HEADER_H) {
                 TooltipMakerPanel(innerWidth, HEADER_H) {
-                    setParaFont(getFontPath(Font.ORBITRON_20))
+                    // Default para font on purpose: setParaFont takes a path and only resolves for
+                    // fonts the engine has already loaded, so an arbitrary one leaves a null font
+                    // that throws on the next setText. See the note on tabButton.
                     addPara(title, Misc.getBrightPlayerColor(), 0f)
                 }
                 plainButton(innerWidth - 100f, 0f, 100f, HEADER_H - 4f, "CANCEL", DANGER) {

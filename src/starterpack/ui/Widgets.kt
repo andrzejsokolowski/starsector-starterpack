@@ -66,16 +66,22 @@ fun CustomPanelAPI.staticElement(
 
 // --- Buttons -----------------------------------------------------------------------------------
 
-/** A toggle-looking button used for tabs and list selection; [active] draws it checked. */
+/**
+ * A toggle-looking button used for tabs and list selection; [active] draws it checked.
+ *
+ * Deliberately uses the default checkbox font. `setAreaCheckboxFont` takes a font *path*, and only
+ * the handful of fonts the engine has already loaded resolve through it -- anything else leaves the
+ * label with a null font and the next `setText` throws deep inside the renderer. Buttons escape this
+ * because the framework maps them to named setters like `setButtonFontOrbitron20()` instead of a
+ * path, which is why a custom-font button works and a custom-font checkbox does not.
+ */
 fun UIPanelAPI.tabButton(
     x: Float, y: Float, width: Float, height: Float,
     label: String, active: Boolean,
-    font: Font? = null,
     onPress: () -> Unit,
 ) {
     CustomPanel(width, height) {
         TooltipMakerPanel(width, height) {
-            font?.let { setAreaCheckboxFont(getFontPath(it)) }
             addAreaCheckbox(
                 label, null,
                 Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Misc.getBrightPlayerColor(),

@@ -3,7 +3,7 @@
   "name": "StarterPack",
   "author": "Oddisz",
   "utility": "true",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Build a starting loadout once and stamp it onto every new game. Pick ships, their weapons, fighters, hullmods, S-mods and D-mods, your cargo, credits, skill points, story points and hotbar layout from a main-menu editor. Templates live in saves/common, so they survive save deletion and mod updates. Applied once per campaign, either automatically on new game or with the 'starterpack' console command.",
   "gameVersion": "0.98a-RC8",
   "jars": ["jars/StarterPack.jar"],

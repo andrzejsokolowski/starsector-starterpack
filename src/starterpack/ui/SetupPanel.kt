@@ -146,10 +146,22 @@ object SetupPanel {
         panel.anchorInCenterOfParent()
         root = panel
 
-        buildHeader()
-        rebuildContent()
-        buildFooter()
+        // Each section is built independently. The panel is already in the UI tree by this point, so
+        // an exception escaping here would leave an empty bordered box on screen with no way to tell
+        // what went wrong -- which is exactly what a bad font call once produced. Failing one section
+        // at a time keeps the rest usable and puts the cause in the log.
+        buildSafely("header") { buildHeader() }
+        buildSafely("content") { rebuildContent() }
+        buildSafely("footer") { buildFooter() }
         return panel
+    }
+
+    private fun buildSafely(what: String, block: () -> Unit) {
+        runCatching(block).onFailure {
+            Global.getLogger(SetupPanel::class.java)
+                .error("StarterPack: could not build the editor's $what.", it)
+            status = "Part of the editor ($what) failed to build -- see starsector.log."
+        }
     }
 
     fun dispose() {
@@ -184,9 +196,9 @@ object SetupPanel {
 
         if (dirty) {
             dirty = false
-            rebuildContent()
-            buildHeader()
-            buildFooter()
+            buildSafely("content") { rebuildContent() }
+            buildSafely("header") { buildHeader() }
+            buildSafely("footer") { buildFooter() }
         }
     }
 
@@ -235,7 +247,7 @@ object SetupPanel {
             // The tabs that edit a template are meaningless without one, so clicking them does
             // nothing until the store has something in it.
             val usable = entry == Tab.TEMPLATES || template != null
-            host.tabButton(x, 0f, tabWidth, HEADER_H - 4f, entry.label, entry == tab, Font.ORBITRON_20) {
+            host.tabButton(x, 0f, tabWidth, HEADER_H - 4f, entry.label, entry == tab) {
                 if (usable && tab != entry) {
                     tab = entry
                     markDirty()
@@ -258,12 +270,27 @@ object SetupPanel {
 
         if (template == null && tab != Tab.TEMPLATES) tab = Tab.TEMPLATES
 
-        when (tab) {
-            Tab.TEMPLATES -> TemplatesTab.build(host, contentWidth, contentHeight)
-            Tab.SHIPS -> ShipsTab.build(host, contentWidth, contentHeight)
-            Tab.CARGO -> CargoTab.build(host, contentWidth, contentHeight)
-            Tab.CHARACTER -> CharacterTab.build(host, contentWidth, contentHeight)
-            Tab.HOTBAR -> HotbarTab.build(host, contentWidth, contentHeight)
+        // A tab that throws leaves the tab strip alive so you can switch away from it, rather than
+        // taking the window down with it.
+        runCatching {
+            when (tab) {
+                Tab.TEMPLATES -> TemplatesTab.build(host, contentWidth, contentHeight)
+                Tab.SHIPS -> ShipsTab.build(host, contentWidth, contentHeight)
+                Tab.CARGO -> CargoTab.build(host, contentWidth, contentHeight)
+                Tab.CHARACTER -> CharacterTab.build(host, contentWidth, contentHeight)
+                Tab.HOTBAR -> HotbarTab.build(host, contentWidth, contentHeight)
+            }
+        }.onFailure { failure ->
+            Global.getLogger(SetupPanel::class.java)
+                .error("StarterPack: the ${tab.label} tab failed to build.", failure)
+            host.clearChildren()
+            host.TooltipMakerPanel(contentWidth, contentHeight) {
+                addPara(
+                    "The ${tab.label} tab failed to build: ${failure.message ?: failure.javaClass.simpleName}. " +
+                        "The full stack trace is in starsector.log. Other tabs still work.",
+                    DANGER, 8f,
+                )
+            }
         }
 
         // The overlay is re-parented last so it keeps drawing over the content: a rebuild happens
