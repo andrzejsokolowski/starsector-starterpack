@@ -70,6 +70,11 @@ moment the mod comes back.
 - LazyLib
 - Console Commands (optional)
 
+## Credits
+
+`starterpack.uiframework` is vendored from [Refit Filters](https://github.com/Starficz/RefitFilters) by
+Starficz, LGPL-3.0-only. See [CREDITS.txt](CREDITS.txt).
+
 ## Building
 
 `gradle.properties` points at your Starsector install:

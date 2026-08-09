@@ -1,0 +1,22 @@
+StarterPack
+by Oddisz
+https://github.com/andrzejsokolowski/starsector-starterpack
+
+Third-party code bundled in jars/StarterPack.jar
+------------------------------------------------
+
+starterpack.uiframework
+    Vendored from "Refit Filters" by Starficz, repackaged under starterpack.uiframework.
+    Copyright Starficz. Licensed under LGPL-3.0-only.
+    https://www.gnu.org/licenses/lgpl-3.0.html
+
+    Unmodified apart from the package rename and the visibility changes needed to use it
+    from outside its own package. Source for this component is in src/starterpack/uiframework
+    in the repository above, and every file there keeps its original licence header.
+
+Requirements
+------------
+
+LazyLib          required; also provides the Kotlin runtime, which this mod deliberately
+                 does not bundle
+Console Commands optional; enables the "starterpack" console command
