@@ -1,0 +1,99 @@
+[center][img width=220]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starterIconBig.png?raw=true[/img]
+[size=28pt][url=https://github.com/andrzejsokolowski/starsector-starterpack/releases/latest][b]StarterPack[/b][/url][/size]
+[url=https://github.com/andrzejsokolowski/starsector-starterpack/releases/latest][img]https://img.shields.io/github/downloads/andrzejsokolowski/starsector-starterpack/total?style=for-the-badge&label=download[/img][/url]  [url=https://github.com/andrzejsokolowski/starsector-starterpack][img]https://img.shields.io/github/v/release/andrzejsokolowski/starsector-starterpack?display_name=tag&sort=semver&style=for-the-badge&label=source[/img][/url]
+[/center]
+[center][b]
+WHAT DOES THIS MOD DO?
+- Build a starting loadout once from the main menu, and stamp it onto every new game you ever start.
+
+
+
+Do you start a lot of campaigns? Do you spend the first ten minutes of each one buying the same three ships, bolting on the same weapons, spending the same skill points and dragging the same abilities onto the same hotbar keys?
+Do it once. Save it. Every new game after that starts with it already done.
+
+Ships with their weapons, fighters, hullmods, S-mods and D-mods. Your cargo, your credits, your skill points, your story points. All five hotbar rows, ten slots each, hyperspace overrides included.
+Made for testing, and unashamed about it. This is a cheat mod. That is the point.
+
+
+
+Templates are stored per installation, not per save. Delete every campaign you own and they are still there.
+The code is fully open source. You don't have to credit me. Claude Code built this anyway.
+[color=red]Requires [b]LazyLib[/b]. Console Commands is optional.[/color]
+[/b][/center]
+[spoiler=Screenshots]
+[center][img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter1.png?raw=true[/img]
+[img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter2.png?raw=true[/img]
+[img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter3.png?raw=true[/img]
+[img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter4.png?raw=true[/img]
+[img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter5.png?raw=true[/img][/center]
+[/spoiler]
+[center]
+[table]
+[tr]
+[td][hr][center][size=12pt][b]The Editor[/b][/size][/center][hr]
+[list]
+[li]Adds a [b]STARTER PACK[/b] button to the bottom right of the main menu. No campaign needed, no save to load.[/li]
+[li]Five tabs: [b]Templates[/b], [b]Ships[/b], [b]Cargo[/b], [b]Character[/b], [b]Hotbar[/b].[/li]
+[li]Keep as many templates as you like and switch which one is active. Duplicate one to make a variant without rebuilding it.[/li]
+[li]Every picker is [b]searchable[/b] and matches name, id and source mod, with the game's own description and sprite on hover. It reads your whole modlist, so modded content is in there on equal footing.[/li]
+[li]Anything that no longer resolves when the pack is applied -- a weapon from a mod you turned off -- is [b]reported by name and skipped[/b]. The rest of the template still applies, and the id starts working again the moment the mod comes back.[/li]
+[/list]
+[hr][center][size=12pt][b]Ships[/b][/size][/center][hr]
+[list]
+[li]Any hull in your install, named whatever you want, and one of them flagged as your [b]flagship[/b].[/li]
+[li][b]A weapon per slot and a fighter wing per bay[/b], with slots listed by what they actually are -- "Medium Ballistic hardpoint 2" -- instead of by internal id.[/li]
+[li][b]Vents and capacitors[/b], bounded by the same limit the refit screen uses, Flux Regulation included.[/li]
+[li][b]Hullmods in four flavours[/b]: regular ones that cost OP, S-mods that are built in and count against the limit exactly as spending a story point would, D-mods that swap the hull to its (D) version the way battle damage does, and [b]free built-ins[/b] -- permanent, free, and [i]not[/i] counted as S-mods, so the ship keeps its full story point allowance. There is no way to get that last one in a normal game.[/li]
+[li][b]Load a stock loadout[/b] copies any vanilla or modded variant of that hull into the template in one click. Usually the fastest way to start: pick the closest stock fit, then change what you want.[/li]
+[li]Live [b]OP budget[/b] as you build, so you find out you overspent here rather than in refit.[/li]
+[/list]
+[hr][center][size=12pt][b]Cargo, Character and Hotbar[/b][/size][/center][hr]
+[list]
+[li][b]Cargo[/b]: commodities, loose weapons, fighter LPCs, hullmod blueprints and special items -- AI cores, colony items, ship and industry blueprints.[/li]
+[li][b]Character[/b]: credits, unspent skill points, story points and level. Leave credits or level blank to keep whatever the campaign start gave you.[/li]
+[li][b]Hotbar[/b]: all five bars, ten slots each, with a separate [b]hyperspace override[/b] per slot. Anything you slot is also taught to your character, so the key works the moment the campaign starts.[/li]
+[/list]
+[hr][center][size=12pt][b]How It Gets Applied[/b][/size][/center][hr]
+[list]
+[li]Tick [b]Apply automatically on new game[/b] and forget about it, or run [b]starterpack[/b] in the console once the campaign has started. Console Commands is optional; without it, use the toggle.[/li]
+[li][b]Once per campaign.[/b] A flag in the save records that a pack was applied, so you can't accidentally double your credits and re-add your fleet. Add [b]force[/b] to override it.[/li]
+[li]Whether applying [b]replaces[/b] your starting fleet and hold or [b]adds[/b] to them is per template. Both default to replacing.[/li]
+[li]Console: [b]list[/b], [b]info <name>[/b], [b]status[/b], [b]apply <name>[/b], [b]on[/b] / [b]off[/b].[/li]
+[/list]
+[hr][center][size=12pt][b]Storage[/b][/size][/center][hr]
+[list]
+[li]Saved to [b]saves/common/starterpack/templates.json[/b], shared by every save you ever make.[/li]
+[li]Nothing is written into a savegame except the one "already applied" flag, so adding or removing the mod can't corrupt one.[/li]
+[li]Stored as plain ids in plain JSON. Hand-edit it if you'd rather.[/li]
+[/list]
+[/td][/tr][/table][/center]
+[spoiler=FAQ]
+[b]Do I need to start a new game?[/b]
+To use a pack, yes -- it's meant for the first minute of a campaign. You can build and edit templates any time, without loading anything.
+[b]Can I apply it to a save that's already running?[/b]
+Yes, with the console command. It will do exactly what it says: disband your fleet and empty your hold if the template is set to replace. Turn those off first if you only want it to add.
+[b]Can I add or remove the mod mid save?[/b]
+Yes. The only thing it ever writes into a save is a flag saying a pack was applied. Removing the mod leaves everything it gave you exactly where it is.
+[b]What if I apply it twice by accident?[/b]
+You can't. It refuses, and tells you which template that campaign already had. [b]starterpack apply <name> force[/b] if you meant it.
+[b]What happens if I disable a mod a template uses?[/b]
+The rest of the template applies and the missing pieces are listed by name. Their ids stay in the file, so turning the mod back on makes them work again.
+[b]Does it work with modded ships and weapons?[/b]
+That's most of the point. Everything in the pickers comes from your installed specs, whatever their source.
+[b]Officers?[/b]
+No. Ships come in unofficered on purpose -- officer generation is its own can of worms and I'd rather this stayed reliable.
+[b]Is this cheating?[/b]
+Yes. It hands you a fleet, money and story points on request. It's a testing tool that happens to be fun.
+[b]Why build a whole editor instead of capturing my current fleet?[/b]
+Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
+[/spoiler]
+[spoiler=Version log]
+0.2.1
+Removed the 999 cap on skill and story point grants. The game never had one, so neither does the editor.
+
+0.2.0
+Fixed hotbars and fighter bays loading corrupted -- every empty slot came back holding a phantom ability. Existing templates repair themselves on load. Fixed ships tagged UNDER_PARENT being missing from the hull picker, which hid a number of modded civilian hulls. Vents and capacitors now respect the game's real per-hull-size limit, weapon slots read as "Medium Ballistic hardpoint 2" instead of an internal id, and pickers show the game's own descriptions on hover.
+
+0.1.1
+First public build. Main menu editor, five tabs, console command and auto-apply.
+[/spoiler]
