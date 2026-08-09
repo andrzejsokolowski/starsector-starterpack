@@ -19,11 +19,12 @@ object CharacterTab {
     /**
      * Ceiling on the point grants.
      *
-     * Not a game limit -- the engine will happily take more -- but a typo guard. These are text
-     * fields, and there is no meaningful difference between 999 free story points and 99999 except
-     * that one of them is what you meant to type.
+     * Not a game limit -- the engine takes whatever it is handed -- and deliberately far above any
+     * number anyone would type on purpose. It exists only so the steppers have something to clamp
+     * against and so a field of digits cannot overflow an Int; "effectively infinite story points"
+     * is a legitimate thing to want and the editor should not argue about it.
      */
-    private const val MAX_POINTS = 999
+    private const val MAX_POINTS = 9_999_999
 
     fun build(host: CustomPanelAPI, width: Float, height: Float) {
         host.scrollRegion(0f, 0f, width, height, "character.body") { body(width - 24f) }
@@ -62,9 +63,9 @@ object CharacterTab {
             SetupPanel.markSaveNeeded()
         }
         addPara(
-            "Unspent points, granted on top of what you already have, up to %s. Spend them in the " +
-                "character screen -- the template does not choose skills for you.",
-            2f, Misc.getGrayColor(), Misc.getHighlightColor(), MAX_POINTS.toString(),
+            "Unspent points, granted on top of what you already have. Spend them in the character " +
+                "screen -- the template does not choose skills for you.",
+            Misc.getGrayColor(), 2f,
         )
 
         intRow(
@@ -76,9 +77,9 @@ object CharacterTab {
             SetupPanel.markSaveNeeded()
         }
         addPara(
-            "Granted on top of your current story points, up to %s. A larger number is clamped to " +
-                "that when you click away.",
-            2f, Misc.getGrayColor(), Misc.getHighlightColor(), MAX_POINTS.toString(),
+            "Granted on top of your current story points. Type as many as you like -- %s is a " +
+                "perfectly good answer if you would rather not think about accrual.",
+            2f, Misc.getGrayColor(), Misc.getHighlightColor(), "99999",
         )
 
         addSectionHeading("Level", Alignment.MID, 14f)
