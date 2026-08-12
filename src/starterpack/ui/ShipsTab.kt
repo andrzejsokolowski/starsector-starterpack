@@ -9,7 +9,7 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI
 import com.fs.starfarer.api.util.Misc
 import com.fs.starfarer.api.loading.WeaponSlotAPI
 import starterpack.bench.BenchState
-import starterpack.bench.LoadoutBench
+import starterpack.bench.BenchFiles
 import starterpack.catalog.Catalog
 import starterpack.catalog.CatalogEntry
 import starterpack.catalog.CatalogKind
@@ -122,7 +122,7 @@ object ShipsTab {
         buttons(inner, 26f, 6f, listOf(
             RowButton("Send to refit bench", enabled = template.ships.isNotEmpty()) {
                 BenchState.stage(template)
-                val cleared = LoadoutBench.clearSavedVariants()
+                val cleared = BenchFiles.clearSavedVariants()
                 SetupPanel.setStatus(
                     "Bench ready: Missions -> \"StarterPack - Loadout Bench\" -> REFIT. Leave the " +
                         "mission when you are done and your loadouts come back automatically." +

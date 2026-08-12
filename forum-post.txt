@@ -97,6 +97,9 @@ Yes. It hands you a fleet, money and story points on request. It's a testing too
 Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
 [/spoiler]
 [spoiler=Version log]
+1.1.1
+Fixed 1.1.0 crashing the game on startup. Do not use 1.1.0.
+
 1.1.0
 Added the refit bench: fit your template's ships in the game's own refit screen, reached as a mission from the main menu, and StarterPack reads the result back automatically. Weapon groups and autofire are now part of a template, and can only be set this way.
 

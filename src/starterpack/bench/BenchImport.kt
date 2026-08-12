@@ -55,7 +55,7 @@ object BenchImport {
      */
     fun consumeOnReturn(): ImportResult? {
         val template = BenchState.templateForBench()
-        if (LoadoutBench.savedVariants().isEmpty() || template == null) {
+        if (BenchFiles.savedVariants().isEmpty() || template == null) {
             BenchState.clearAwaiting()
             return null
         }
@@ -64,7 +64,7 @@ object BenchImport {
             .getOrElse { ImportResult(warnings = listOf("Refit bench import failed: ${it.message}")) }
 
         if (result.changedAnything) runCatching { starterpack.store.TemplateStore.flush() }
-        LoadoutBench.clearSavedVariants()
+        BenchFiles.clearSavedVariants()
         BenchState.clearAwaiting()
         BenchState.lastImport = result
         log.info("StarterPack: ${result.summary()}")
@@ -80,14 +80,14 @@ object BenchImport {
      * wrong import would silently overwrite a loadout, which is worse than not importing at all.
      */
     fun importInto(template: Template): ImportResult {
-        val files = LoadoutBench.savedVariants()
+        val files = BenchFiles.savedVariants()
         if (files.isEmpty()) return ImportResult()
 
         val warnings = ArrayList<String>()
         var updated = 0
 
         for (file in files) {
-            val index = LoadoutBench.indexOf(file)
+            val index = BenchFiles.indexOf(file)
             if (index !in template.ships.indices) {
                 warnings += "Ignored ${file.name}: the template has no ship at position ${index + 1}."
                 continue

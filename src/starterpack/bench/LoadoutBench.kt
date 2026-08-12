@@ -1,13 +1,11 @@
 package starterpack.bench
 
-import com.fs.starfarer.api.Global
 import com.fs.starfarer.api.fleet.FleetGoal
 import com.fs.starfarer.api.fleet.FleetMemberType
 import com.fs.starfarer.api.mission.FleetSide
 import com.fs.starfarer.api.mission.MissionDefinitionAPI
 import starterpack.apply.TemplateApplier
 import starterpack.model.Template
-import java.io.File
 
 /**
  * The refit bench: a mission whose only purpose is to hand you the game's own refit screen.
@@ -22,6 +20,13 @@ import java.io.File
  * validation, and reads the result back. See [BenchImport] for the return leg.
  *
  * The mission is *not* meant to be fought. It exists to own a refit screen.
+ *
+ * **Nothing on this class may mention `java.io.File`.** `data/missions/starterpack_bench/
+ * MissionDefinition.java` is compiled at runtime by Janino, and resolving its single call to
+ * [defineMission] makes Janino call `getDeclaredMethods()` here -- which forces the JVM to load every
+ * type in every signature on this object through a classloader that refuses `java.io.File` outright
+ * ("File access and reflection are not allowed to scripts"). One stray `File` fails the compile and
+ * takes the game's startup down with it. File handling lives in [BenchFiles] for exactly this reason.
  */
 object LoadoutBench {
 
@@ -91,61 +96,14 @@ object LoadoutBench {
         api.initMap(-6000f, 6000f, -6000f, 6000f)
     }
 
-    /** `saves/missions/starterpack_bench`, wherever this install keeps its saves. */
-    fun benchDir(): File = File(savesDir(), "missions/$MISSION_ID")
-
     /**
-     * The saves directory.
+     * Discards anything a previous bench trip left behind.
      *
-     * The launcher passes this as a system property (`-Dcom.fs.starfarer.settings.paths.saves`), so
-     * installs that relocate their saves are handled. The fallback matches the stock launcher, whose
-     * working directory is `starsector-core`.
+     * Delegates rather than doing it here on purpose -- see the class note above and [BenchFiles].
+     * The `Int` return keeps `java.io.File` off this class's signatures.
      */
-    private fun savesDir(): File =
-        File(System.getProperty("com.fs.starfarer.settings.paths.saves") ?: "../saves")
-
-    /** Every variant the bench has written, in fleet order. Empty when it has never been visited. */
-    fun savedVariants(): List<File> {
-        val dir = benchDir()
-        if (!dir.isDirectory) return emptyList()
-        val files = dir.listFiles { f: File -> f.isFile && f.name.endsWith(".variant") } ?: return emptyList()
-        return files.sortedBy { indexOf(it) }
-    }
-
-    /**
-     * The fleet index encoded in a bench variant's filename.
-     *
-     * The game names these `mission_<mission id>_ship_<n>.variant`. A name that does not parse
-     * returns [Int.MAX_VALUE] so it sorts last and is rejected by the importer rather than silently
-     * being treated as ship zero.
-     */
-    fun indexOf(file: File): Int {
-        val name = file.name.removeSuffix(".variant")
-        val marker = "_ship_"
-        val at = name.lastIndexOf(marker)
-        if (at < 0) return Int.MAX_VALUE
-        return name.substring(at + marker.length).toIntOrNull() ?: Int.MAX_VALUE
-    }
-
-    /**
-     * Deletes what the bench previously wrote.
-     *
-     * Run before sending the user in, so a template that lost a ship cannot have the stale variant of
-     * a since-removed slot imported back onto whatever now occupies that index.
-     */
-    fun clearSavedVariants(): Int {
-        var removed = 0
-        for (file in savedVariants()) {
-            if (runCatching { file.delete() }.getOrDefault(false)) removed++
-        }
-        return removed
-    }
-
-    private val log = Global.getLogger(LoadoutBench::class.java)
-
-    init {
-        log.info("StarterPack: refit bench available as mission '$MISSION_ID'.")
-    }
+    @JvmStatic
+    fun clearSavedVariants(): Int = BenchFiles.clearSavedVariants()
 }
 
 /**

@@ -45,3 +45,43 @@ jar {
     // Do not embed the Kotlin stdlib -- LazyLib provides it. This keeps the jar small and
     // avoids classloader conflicts with other Kotlin mods.
 }
+
+/**
+ * Guards the one class that Janino has to resolve.
+ *
+ * data/missions/starterpack_bench/MissionDefinition.java is compiled at runtime by Starsector's
+ * script compiler, which loads classes through a loader that refuses java.io and java.lang.reflect
+ * outright: "File access and reflection are not allowed to scripts". Resolving the script's single
+ * call makes Janino ask LoadoutBench for its declared members, forcing the JVM to load every type in
+ * every one of its signatures -- so one innocuous helper returning a File there crashes the game on
+ * startup, before the main menu, with a stack trace that names Janino rather than the helper.
+ *
+ * That is far too quiet a trap to leave to a comment, so the build refuses to produce a jar that
+ * would spring it.
+ */
+tasks.register('checkScriptFacade') {
+    dependsOn tasks.named('classes')
+    def classFile = layout.buildDirectory.file('classes/kotlin/main/starterpack/bench/LoadoutBench.class')
+    def bannedPrefixes = ['java/io/', 'java/nio/', 'java/lang/reflect/']
+    inputs.file(classFile)
+    outputs.upToDateWhen { false }
+    doLast {
+        def target = classFile.get().asFile
+        if (!target.exists()) {
+            throw new GradleException("checkScriptFacade: ${target} not found -- has the class moved?")
+        }
+        // Descriptors live as plain UTF-8 in the constant pool, so a byte scan is enough here and
+        // needs no ASM dependency. It over-approximates (a banned name anywhere trips it), which is
+        // the safe direction for a guard whose failure mode is an unbootable game.
+        def bytes = new String(target.readBytes(), 'ISO-8859-1')
+        def found = bannedPrefixes.findAll { bytes.contains(it) }
+        if (found) {
+            throw new GradleException(
+                "LoadoutBench references ${found.join(', ')} -- Starsector's script classloader " +
+                "refuses those, and the refit bench mission will fail to compile at game startup. " +
+                "Move that code to BenchFiles (or any class the mission does not name).")
+        }
+    }
+}
+
+tasks.named('jar') { dependsOn 'checkScriptFacade' }
