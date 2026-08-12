@@ -47,6 +47,15 @@ The code is fully open source. You don't have to credit me. Claude Code built th
 [li][b]Load a stock loadout[/b] copies any vanilla or modded variant of that hull into the template in one click. Usually the fastest way to start: pick the closest stock fit, then change what you want.[/li]
 [li]Live [b]OP budget[/b] as you build, so you find out you overspent here rather than in refit.[/li]
 [/list]
+[hr][center][size=12pt][b]The Refit Bench[/b][/size][/center][hr]
+[list]
+[li]The game already has a better loadout editor than I could write. So [b]use it[/b]: press [b]Send to refit bench[/b], go to [b]Missions -> StarterPack - Loadout Bench -> Refit[/b], and fit your ships in the real refit screen.[/li]
+[li]Leave the mission and your loadouts are [b]read straight back into the template[/b]. No export, no button, no file juggling.[/li]
+[li]Real ordnance points, real hullmod rules, real S-mod limits -- because it [i]is[/i] the refit screen.[/li]
+[li][b]Weapon groups and autofire come back too[/b], and the bench is the only way to set them. Linked and alternating both survive.[/li]
+[li]Ships are still added and removed in the editor -- a mission's fleet is fixed by its definition. D-mods and free built-ins stay there too, since refit can't grant either, but it won't strip them off a ship that has them.[/li]
+[li]The mission is not meant to be fought. It exists to own a refit screen.[/li]
+[/list]
 [hr][center][size=12pt][b]Cargo, Character and Hotbar[/b][/size][/center][hr]
 [list]
 [li][b]Cargo[/b]: commodities, loose weapons, fighter LPCs, hullmod blueprints and special items -- AI cores, colony items, ship and industry blueprints.[/li]
@@ -88,6 +97,9 @@ Yes. It hands you a fleet, money and story points on request. It's a testing too
 Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
 [/spoiler]
 [spoiler=Version log]
+1.1.0
+Added the refit bench: fit your template's ships in the game's own refit screen, reached as a mission from the main menu, and StarterPack reads the result back automatically. Weapon groups and autofire are now part of a template, and can only be set this way.
+
 1.0.1
 Linked the mod to this forum thread, so mod managers and Version Checker can track it properly.
 

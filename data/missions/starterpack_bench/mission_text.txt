@@ -1,0 +1,7 @@
+This is not a battle. It is your StarterPack template, standing in a dry dock that happens to be shaped like a mission.
+
+Press REFIT and fit your ships using the game's own refit screen -- real ordnance points, real hullmod rules, real weapon groups. When you are done, leave the mission. StarterPack reads what you built straight back into the template.
+
+Ships are added and removed in the STARTER PACK editor on the main menu. The bench only fits the ones already there.
+
+The enemy is a formality. You are not expected to fight it, and nothing here is scored.

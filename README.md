@@ -35,6 +35,27 @@ allowance on top.
 the template in one click. That is usually the fastest way to start — pick the closest stock variant,
 then change what you want.
 
+## The refit bench
+
+Fitting ships in this mod's own pickers is fine, but the game already has a better loadout editor:
+the refit screen. The bench lends it to you.
+
+1. Build your fleet on the **Ships** tab, then press **Send to refit bench**.
+2. Main menu → **Missions** → *StarterPack - Loadout Bench* → **Refit**.
+3. Fit your ships in the real refit screen, with real ordnance points and real hullmod rules.
+4. Leave the mission. Your loadouts are read back into the template automatically.
+
+The mission is not meant to be fought; it exists to own a refit screen. Starsector persists mission
+loadouts to `saves/missions/starterpack_bench/` independently of any campaign, which is what makes
+the round trip possible.
+
+Weapons, fighters, vents, capacitors, hullmods, S-mods and **weapon groups** come back. Weapon groups
+have no editor of their own here, so the bench is the only way to set them.
+
+Adding and removing ships stays in the editor — a mission's fleet is fixed by its definition. D-mods
+and free built-ins also stay in the editor, since the refit screen cannot grant either, though it
+will not strip them off a ship that already has them.
+
 ## Console commands
 
 Console Commands is optional. Without it, use the auto-apply toggle.

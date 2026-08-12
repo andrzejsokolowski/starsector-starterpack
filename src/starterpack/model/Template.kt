@@ -193,19 +193,32 @@ class ShipEntry(
     }
 }
 
-/** One weapon group: which slots are in it and whether it starts in autofire. */
+/**
+ * One weapon group: which slots are in it, its fire mode, and whether it starts in autofire.
+ *
+ * [mode] mirrors the game's `WeaponGroupType` by name rather than by enum so that an unknown value
+ * -- a future game version adding a third mode -- degrades to LINKED instead of failing to parse.
+ */
 class WeaponGroup(
     var autofire: Boolean = false,
+    var mode: String = LINKED,
     val slots: MutableList<String> = ArrayList(),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("autofire", autofire)
+        put("mode", mode)
         put("slots", JSONArray(slots))
     }
 
     companion object {
+        const val LINKED = "LINKED"
+        const val ALTERNATING = "ALTERNATING"
+
         fun fromJson(json: JSONObject): WeaponGroup = WeaponGroup(
             autofire = json.optBoolean("autofire", false),
+            // Absent on templates written before groups carried a mode; those were all built as
+            // LINKED, so that is the honest default rather than merely a convenient one.
+            mode = json.optString("mode", LINKED).takeIf { it == ALTERNATING } ?: LINKED,
             slots = json.optJSONArray("slots").toIdList(),
         )
     }

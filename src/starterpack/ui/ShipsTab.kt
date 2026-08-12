@@ -8,6 +8,8 @@ import com.fs.starfarer.api.ui.CustomPanelAPI
 import com.fs.starfarer.api.ui.TooltipMakerAPI
 import com.fs.starfarer.api.util.Misc
 import com.fs.starfarer.api.loading.WeaponSlotAPI
+import starterpack.bench.BenchState
+import starterpack.bench.LoadoutBench
 import starterpack.catalog.Catalog
 import starterpack.catalog.CatalogEntry
 import starterpack.catalog.CatalogKind
@@ -97,6 +99,49 @@ object ShipsTab {
                 }
             },
         ))
+
+        buildBenchSection(inner, template)
+    }
+
+    /**
+     * The hand-off to the game's own refit screen.
+     *
+     * The button cannot start the mission itself: the title screen's state machine is obfuscated, and
+     * reflecting into it would break on every game patch with a crash on the main menu -- the worst
+     * possible place for one. So this stages the bench and says where to click. The return trip needs
+     * no button at all, because [starterpack.TitleScreenHook] notices it.
+     */
+    private fun TooltipMakerAPI.buildBenchSection(inner: Float, template: Template) {
+        addSectionHeading("Refit bench", Alignment.MID, 14f)
+        addPara(
+            "Fit these ships in the game's real refit screen, with real ordnance points and real " +
+                "hullmod rules, then come back. Ships are still added and removed here.",
+            Misc.getGrayColor(), 4f,
+        )
+
+        buttons(inner, 26f, 6f, listOf(
+            RowButton("Send to refit bench", enabled = template.ships.isNotEmpty()) {
+                BenchState.stage(template)
+                val cleared = LoadoutBench.clearSavedVariants()
+                SetupPanel.setStatus(
+                    "Bench ready: Missions -> \"StarterPack - Loadout Bench\" -> REFIT. Leave the " +
+                        "mission when you are done and your loadouts come back automatically." +
+                        if (cleared > 0) " (Discarded $cleared stale loadout(s).)" else ""
+                )
+            },
+        ))
+
+        if (BenchState.awaitingReturn) {
+            addPara(
+                "Waiting on a bench trip. Open Missions from the main menu.",
+                Misc.getHighlightColor(), 4f,
+            )
+        }
+        addPara(
+            "D-mods and free built-ins stay here -- the refit screen has no way to grant those, but " +
+                "it will not strip them either.",
+            Misc.getGrayColor(), 4f,
+        )
     }
 
     private fun move(template: Template, index: Int, delta: Int) {

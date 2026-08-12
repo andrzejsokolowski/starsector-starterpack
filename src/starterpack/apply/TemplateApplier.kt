@@ -18,6 +18,7 @@ import starterpack.model.CargoSpec
 import starterpack.model.Hotbar
 import starterpack.model.ShipEntry
 import starterpack.model.Template
+import starterpack.model.WeaponGroup
 
 /**
  * What an apply actually did, so the console and the auto-apply log can say something specific.
@@ -185,7 +186,8 @@ object TemplateApplier {
         }
     }
 
-    private fun buildMember(entry: ShipEntry, warnings: MutableList<String>): FleetMemberAPI? {
+    /** Internal so the refit bench can stand the same ships up inside a mission. */
+    internal fun buildMember(entry: ShipEntry, warnings: MutableList<String>): FleetMemberAPI? {
         val variant = buildVariant(entry, warnings) ?: return null
         val member = runCatching {
             Global.getFactory().createFleetMember(FleetMemberType.SHIP, variant)
@@ -327,7 +329,12 @@ object TemplateApplier {
         }
         runCatching {
             for (group in entry.weaponGroups) {
-                val spec = WeaponGroupSpec(WeaponGroupType.LINKED)
+                val type = if (group.mode == WeaponGroup.ALTERNATING) {
+                    WeaponGroupType.ALTERNATING
+                } else {
+                    WeaponGroupType.LINKED
+                }
+                val spec = WeaponGroupSpec(type)
                 spec.isAutofireOnByDefault = group.autofire
                 group.slots.filter { variant.getWeaponId(it) != null }.forEach { spec.addSlot(it) }
                 if (spec.slots.isNotEmpty()) variant.addWeaponGroup(spec)

@@ -6,6 +6,7 @@ import com.fs.starfarer.api.combat.BaseEveryFrameCombatPlugin
 import com.fs.starfarer.api.input.InputEventAPI
 import com.fs.starfarer.api.ui.UIPanelAPI
 import com.fs.state.AppDriver
+import starterpack.bench.BenchImport
 import starterpack.uiframework.ReflectionUtils.invoke
 
 /**
@@ -43,6 +44,12 @@ class TitleScreenHook : BaseEveryFrameCombatPlugin() {
         injectedInto = screenPanel
         runCatching { MenuButton.injectInto(screenPanel) }
             .onFailure { log.error("StarterPack: failed to add the main-menu button.", it) }
+
+        // A fresh screen panel means we have just arrived at the menu, which is also how we get back
+        // from the refit bench. Anything the bench saved is imported here, before the editor can be
+        // opened on a template that does not yet know about it.
+        runCatching { BenchImport.consumeOnReturn() }
+            .onFailure { log.error("StarterPack: failed to import from the refit bench.", it) }
     }
 
     /** The title screen's root UI panel, or null if the state doesn't expose one (shouldn't happen). */

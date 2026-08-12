@@ -7,6 +7,7 @@ import com.fs.starfarer.api.ui.UIPanelAPI
 import com.fs.starfarer.api.util.Misc
 import org.lwjgl.input.Keyboard
 import starterpack.MenuButton
+import starterpack.bench.BenchState
 import starterpack.catalog.CatalogEntry
 import starterpack.model.Template
 import starterpack.store.TemplateStore
@@ -130,7 +131,12 @@ object SetupPanel {
         template = TemplateStore.active() ?: TemplateStore.all().firstOrNull()
         selectedShip = 0
         hotbarBar = 0
-        status = ""
+        // A refit bench trip is imported on the main menu, where nothing can be shown. Opening the
+        // editor is the first chance to report it, so the parked result becomes the opening status.
+        status = BenchState.lastImport?.let { report ->
+            BenchState.lastImport = null
+            (listOf(report.summary()) + report.warnings).joinToString("  ")
+        }.orEmpty()
         scrollOffsets.clear()
 
         val panel = screenPanel.CustomPanel(width, height) { plugin ->
