@@ -115,7 +115,7 @@ object ShipsTab {
             RowButton("Customize in Refit Screen", enabled = template.ships.isNotEmpty()) {
                 BenchState.stage(template)
                 SetupPanel.setStatus(
-                    "Missions -> \"StarterPack - Loadout Bench\" -> REFIT. Start the battle when you " +
+                    "Missions -> \"! StarterPack Refit Bench\" -> REFIT. Start the battle when you " +
                         "are done and your loadouts are saved back here."
                 )
             },

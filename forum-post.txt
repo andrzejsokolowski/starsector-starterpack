@@ -49,7 +49,7 @@ The code is fully open source. You don't have to credit me. Claude Code built th
 [/list]
 [hr][center][size=12pt][b]The Refit Bench[/b][/size][/center][hr]
 [list]
-[li]The game already has a better loadout editor than I could write. So [b]use it[/b]: press [b]Customize in Refit Screen[/b], go to [b]Missions -> StarterPack - Loadout Bench -> Refit[/b], and fit your ships in the real refit screen.[/li]
+[li]The game already has a better loadout editor than I could write. So [b]use it[/b]: press [b]Customize in Refit Screen[/b], go to [b]Missions -> ! StarterPack Refit Bench -> Refit[/b], and fit your ships in the real refit screen.[/li]
 [li]Start the battle and your loadouts are [b]saved straight back into the template[/b], then leave. No export, no files, no copying ids around.[/li]
 [li]Real ordnance points, real hullmod rules, real S-mod limits -- because it [i]is[/i] the refit screen.[/li]
 [li][b]Weapon groups and autofire come back too[/b], and the bench is the only way to set them. Linked and alternating both survive.[/li]
@@ -97,6 +97,9 @@ Yes. It hands you a fleet, money and story points on request. It's a testing too
 Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
 [/spoiler]
 [spoiler=Version log]
+1.1.3
+Renamed the refit mission to "! StarterPack Refit Bench" so it stands out in a long mission list.
+
 1.1.2
 Fixed the refit bench crashing the game. Renamed the button to "Customize in Refit Screen". 1.1.0 and 1.1.1 are both broken -- use this one.
 

@@ -41,7 +41,9 @@ Fitting ships in this mod's own pickers is fine, but the game already has a bett
 the refit screen. The bench lends it to you.
 
 1. Build your fleet on the **Ships** tab, then press **Customize in Refit Screen**.
-2. Main menu → **Missions** → *StarterPack - Loadout Bench* → **Refit**.
+2. Main menu → **Missions** → *! StarterPack Refit Bench* → **Refit**.
+   The leading `!` is there to make it stand out: the mission list is ordered by mod load
+   order, which a mod cannot influence, so it sits wherever your modlist puts it.
 3. Fit your ships in the real refit screen, with real ordnance points and real hullmod rules.
 4. **Start the battle.** Your loadouts are saved back the instant it begins; leave straight away.
 
