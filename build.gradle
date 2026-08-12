@@ -47,41 +47,55 @@ jar {
 }
 
 /**
- * Guards the one class that Janino has to resolve.
+ * Refuses to build a jar that touches java.io or reflection, anywhere.
  *
- * data/missions/starterpack_bench/MissionDefinition.java is compiled at runtime by Starsector's
- * script compiler, which loads classes through a loader that refuses java.io and java.lang.reflect
- * outright: "File access and reflection are not allowed to scripts". Resolving the script's single
- * call makes Janino ask LoadoutBench for its declared members, forcing the JVM to load every type in
- * every one of its signatures -- so one innocuous helper returning a File there crashes the game on
- * startup, before the main menu, with a stack trace that names Janino rather than the helper.
+ * Starsector loads mod classes through a loader that rejects those outright -- "File access and
+ * reflection are not allowed to scripts" -- and it does so at *class resolution* time, so the failure
+ * lands wherever the class happens to be reached: at startup if a Janino-compiled mission names it,
+ * or mid-click if the UI does. Both have already happened here. Mods read and write only through
+ * Global.getSettings().readTextFileFromCommon and friends, which reach saves/common and nothing else.
  *
- * That is far too quiet a trap to leave to a comment, so the build refuses to produce a jar that
- * would spring it.
+ * The scan is deliberately whole-jar rather than aimed at one class: the first version of this guard
+ * checked only the mission's entry point, and the very next release crashed on a button press instead.
+ *
+ * The vendored uiframework is exempt -- it reflects on purpose, that is its entire job, and it has
+ * shipped in three of the author's mods without tripping the loader. It resolves the game's own
+ * classes through ReflectionUtils, which the loader permits.
  */
-tasks.register('checkScriptFacade') {
+tasks.register('checkNoForbiddenApis') {
     dependsOn tasks.named('classes')
-    def classFile = layout.buildDirectory.file('classes/kotlin/main/starterpack/bench/LoadoutBench.class')
-    def bannedPrefixes = ['java/io/', 'java/nio/', 'java/lang/reflect/']
-    inputs.file(classFile)
+    def classesDir = layout.buildDirectory.dir('classes/kotlin/main')
+    def banned = ['java/io/', 'java/nio/file/', 'java/lang/reflect/']
+    def exemptPackages = ['starterpack/uiframework/']
+    inputs.dir(classesDir)
     outputs.upToDateWhen { false }
     doLast {
-        def target = classFile.get().asFile
-        if (!target.exists()) {
-            throw new GradleException("checkScriptFacade: ${target} not found -- has the class moved?")
+        def root = classesDir.get().asFile
+        if (!root.isDirectory()) {
+            throw new GradleException("checkNoForbiddenApis: ${root} not found -- have the outputs moved?")
         }
-        // Descriptors live as plain UTF-8 in the constant pool, so a byte scan is enough here and
-        // needs no ASM dependency. It over-approximates (a banned name anywhere trips it), which is
-        // the safe direction for a guard whose failure mode is an unbootable game.
-        def bytes = new String(target.readBytes(), 'ISO-8859-1')
-        def found = bannedPrefixes.findAll { bytes.contains(it) }
-        if (found) {
+        def offenders = [:]
+        root.eachFileRecurse { file ->
+            if (!file.name.endsWith('.class')) return
+            def rel = root.toPath().relativize(file.toPath()).toString().replace('\\', '/')
+            if (exemptPackages.any { rel.startsWith(it) }) return
+            // Class names live as plain text in the constant pool, so a byte scan needs no ASM. It
+            // over-approximates -- a banned name anywhere in the pool trips it -- which is the safe
+            // direction for a guard whose failure mode is a fatal dialog box.
+            def text = new String(file.readBytes(), 'ISO-8859-1')
+            def hits = banned.findAll { text.contains(it) }
+            if (hits) offenders[rel] = hits
+        }
+        if (offenders) {
+            def detail = offenders.collect { k, v -> "  ${k}: ${v.join(', ')}" }.join('\n')
             throw new GradleException(
-                "LoadoutBench references ${found.join(', ')} -- Starsector's script classloader " +
-                "refuses those, and the refit bench mission will fail to compile at game startup. " +
-                "Move that code to BenchFiles (or any class the mission does not name).")
+                "Forbidden APIs in mod classes -- Starsector's classloader refuses these and the " +
+                "game will die with \"File access and reflection are not allowed to scripts\":\n" +
+                detail + "\n" +
+                "Use Global.getSettings().readTextFileFromCommon / writeTextFileToCommon instead; " +
+                "they are the only file access mods are given, and they reach saves/common only.")
         }
     }
 }
 
-tasks.named('jar') { dependsOn 'checkScriptFacade' }
+tasks.named('jar') { dependsOn 'checkNoForbiddenApis' }

@@ -40,14 +40,18 @@ then change what you want.
 Fitting ships in this mod's own pickers is fine, but the game already has a better loadout editor:
 the refit screen. The bench lends it to you.
 
-1. Build your fleet on the **Ships** tab, then press **Send to refit bench**.
+1. Build your fleet on the **Ships** tab, then press **Customize in Refit Screen**.
 2. Main menu → **Missions** → *StarterPack - Loadout Bench* → **Refit**.
 3. Fit your ships in the real refit screen, with real ordnance points and real hullmod rules.
-4. Leave the mission. Your loadouts are read back into the template automatically.
+4. **Start the battle.** Your loadouts are saved back the instant it begins; leave straight away.
 
-The mission is not meant to be fought; it exists to own a refit screen. Starsector persists mission
-loadouts to `saves/missions/starterpack_bench/` independently of any campaign, which is what makes
-the round trip possible.
+The mission is not meant to be fought; it exists to own a refit screen.
+
+Starting the battle is not decoration. Mod code cannot read the `.variant` files the game writes —
+Starsector's classloader refuses `java.io` outright, and the file API it does provide reaches only
+`saves/common`. So the loadouts are taken from the live fleet instead, which needs the mission's
+combat engine to exist. In exchange the ships are matched by fleet member id rather than by filename,
+so a loadout can never land on the wrong ship.
 
 Weapons, fighters, vents, capacitors, hullmods, S-mods and **weapon groups** come back. Weapon groups
 have no editor of their own here, so the bench is the only way to set them.

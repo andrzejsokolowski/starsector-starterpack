@@ -6,7 +6,7 @@
     {
         "major":1,
         "minor":1,
-        "patch":"1"
+        "patch":"2"
     },
     "starsectorVersion":"0.98a-RC8",
     "directDownloadURL":"https://github.com/andrzejsokolowski/starsector-starterpack/releases/latest/download/StarterPack.zip"

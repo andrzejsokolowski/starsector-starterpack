@@ -10,23 +10,17 @@ import starterpack.model.Template
 /**
  * The refit bench: a mission whose only purpose is to hand you the game's own refit screen.
  *
- * Starsector lets you refit before a mission starts, and -- crucially -- it *persists* what you built
- * to `saves/missions/<mission id>/mission_<mission id>_ship_<n>.variant`, outside any campaign save.
- * That file is a plain variant JSON carrying hull, vents, capacitors, hullmods, the permanent/S-mod
- * split, weapon groups and wings: very nearly this mod's [starterpack.model.ShipEntry] already.
- *
- * So instead of asking the editor's hand-rolled pickers to compete with the refit screen, the bench
- * stands the active template up as a mission fleet, lets you fit it in the real UI with real ordnance
- * validation, and reads the result back. See [BenchImport] for the return leg.
+ * Starsector lets you refit before a mission starts, so the bench stands the active template up as a
+ * mission fleet and lets you fit it in the real UI with real ordnance validation. [BenchCapture],
+ * registered here, reads the result back out of the live fleet once the mission begins.
  *
  * The mission is *not* meant to be fought. It exists to own a refit screen.
  *
- * **Nothing on this class may mention `java.io.File`.** `data/missions/starterpack_bench/
+ * **Nothing on this class may mention `java.io`.** `data/missions/starterpack_bench/
  * MissionDefinition.java` is compiled at runtime by Janino, and resolving its single call to
  * [defineMission] makes Janino call `getDeclaredMethods()` here -- which forces the JVM to load every
- * type in every signature on this object through a classloader that refuses `java.io.File` outright
- * ("File access and reflection are not allowed to scripts"). One stray `File` fails the compile and
- * takes the game's startup down with it. File handling lives in [BenchFiles] for exactly this reason.
+ * type in every signature on this object through a classloader that refuses `java.io` outright. The
+ * same ban applies to the rest of the mod at runtime; the build enforces it jar-wide.
  */
 object LoadoutBench {
 
@@ -34,11 +28,11 @@ object LoadoutBench {
     const val MISSION_ID = "starterpack_bench"
 
     /**
-     * Stand-in when the template has no ships.
+     * Stand-in when a template ship cannot be built.
      *
      * A mission with an empty player fleet is not something the game is asked to do anywhere in
-     * vanilla, and the bench is reached from a menu that cannot show an error dialog, so it gets one
-     * throwaway hull and a briefing line explaining itself rather than a crash.
+     * vanilla, and the bench is reached from a menu that cannot show an error dialog, so a missing
+     * hull gets one throwaway ship and a briefing line rather than a crash.
      */
     private const val PLACEHOLDER_VARIANT = "hound_Standard"
 
@@ -62,52 +56,47 @@ object LoadoutBench {
         api.setFleetTagline(FleetSide.PLAYER, template?.name ?: "StarterPack")
         api.setFleetTagline(FleetSide.ENEMY, "Nobody. Do not fight this.")
 
+        val memberIds = ArrayList<String>()
+
         if (ships.isEmpty()) {
             api.addBriefingItem("This template has no ships yet.")
             api.addBriefingItem("Add them in the STARTER PACK editor, then come back here to fit them.")
             api.addToFleet(FleetSide.PLAYER, PLACEHOLDER_VARIANT, FleetMemberType.SHIP, "Placeholder", true)
         } else {
-            api.addBriefingItem("Press REFIT, fit your ships, then leave the mission.")
-            api.addBriefingItem("StarterPack reads your loadouts back into the template automatically.")
-            api.addBriefingItem("There is nothing to win here -- this battle is a formality.")
+            api.addBriefingItem("Press REFIT and fit your ships.")
+            api.addBriefingItem("Then start the battle: StarterPack saves your loadouts the instant it begins.")
+            api.addBriefingItem("There is nothing to win here -- leave as soon as it starts.")
 
             val warnings = ArrayList<String>()
-            var added = 0
-            for (entry in ships) {
-                // Order matters and is the contract with the importer: the game names the saved
-                // variant files by fleet index, so member N here is ships[N] there. Anything that
-                // fails to build is still counted, so a skipped ship shifts nothing.
+            for ((index, entry) in ships.withIndex()) {
                 val member = TemplateApplier.buildMember(entry, warnings)
                 if (member == null) {
                     api.addToFleet(
                         FleetSide.PLAYER, PLACEHOLDER_VARIANT, FleetMemberType.SHIP,
-                        "Unavailable: ${entry.hullId}", added == 0,
+                        "Unavailable: ${entry.hullId}", index == 0,
                     )
+                    // A blank id holds this ship's position without ever matching a real member, so
+                    // a hull from a disabled mod cannot shift everything after it onto the wrong ship.
+                    memberIds += ""
                 } else {
                     api.addFleetMember(FleetSide.PLAYER, member)
+                    memberIds += runCatching { member.id }.getOrNull().orEmpty()
                 }
-                added++
             }
             for (warning in warnings) api.addBriefingItem(warning)
         }
 
+        BenchState.recordMembers(memberIds)
+
         api.addToFleet(FleetSide.ENEMY, OPPONENT_VARIANT, FleetMemberType.SHIP, "Formality", false)
+        api.addPlugin(BenchCapture())
 
         api.initMap(-6000f, 6000f, -6000f, 6000f)
     }
-
-    /**
-     * Discards anything a previous bench trip left behind.
-     *
-     * Delegates rather than doing it here on purpose -- see the class note above and [BenchFiles].
-     * The `Int` return keeps `java.io.File` off this class's signatures.
-     */
-    @JvmStatic
-    fun clearSavedVariants(): Int = BenchFiles.clearSavedVariants()
 }
 
 /**
- * Which template the bench builds, and whether a trip to it is outstanding.
+ * Which template the bench builds, and how its fleet maps back onto that template.
  *
  * Held apart from [LoadoutBench] because the mission is constructed by the game on its own schedule,
  * long after the editor that staged it has been torn down.
@@ -117,6 +106,15 @@ object BenchState {
     /** Name of the template staged for the bench, or null to fall back to the active one. */
     private var stagedTemplateName: String? = null
 
+    /**
+     * Fleet member ids in template-ship order, recorded as the mission fleet is assembled.
+     *
+     * This is the whole mapping back: [BenchCapture] looks a member's id up here to find which
+     * template ship it is. Matching on identity rather than on position means a reordered or
+     * partially-built fleet cannot write a loadout onto the wrong ship.
+     */
+    private var memberIds: List<String> = emptyList()
+
     /** True once the user has been sent to the bench and the result has not yet been read back. */
     var awaitingReturn: Boolean = false
         private set
@@ -124,8 +122,8 @@ object BenchState {
     /**
      * The last import, waiting to be shown in the editor.
      *
-     * The import happens on the main menu, which has nowhere to say anything, so the result is parked
-     * here until the editor next opens and can report it.
+     * Capture happens inside the mission and on the main menu, neither of which can show the editor's
+     * status line, so the result is parked here until the editor next opens.
      */
     var lastImport: ImportResult? = null
 
@@ -137,6 +135,15 @@ object BenchState {
     fun clearAwaiting() {
         awaitingReturn = false
     }
+
+    fun recordMembers(ids: List<String>) {
+        memberIds = ArrayList(ids)
+    }
+
+    fun memberIds(): List<String> = memberIds
+
+    /** The id the game gives ship [index] of a mission's player fleet once it has been refitted. */
+    fun missionVariantId(index: Int): String = "mission_${LoadoutBench.MISSION_ID}_ship_$index"
 
     /**
      * The template the mission should build.
