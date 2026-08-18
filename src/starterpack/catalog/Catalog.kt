@@ -74,6 +74,7 @@ object Catalog {
 
     private val cache = HashMap<CatalogKind, List<CatalogEntry>>()
     private val byId = HashMap<CatalogKind, Map<String, CatalogEntry>>()
+    private var moduleHullCache: Set<String>? = null
 
     fun entries(kind: CatalogKind): List<CatalogEntry> = cache.getOrPut(kind) {
         val started = System.nanoTime()
@@ -102,6 +103,7 @@ object Catalog {
     fun invalidate() {
         cache.clear()
         byId.clear()
+        moduleHullCache = null
     }
 
     // --- Builders ------------------------------------------------------------------------------
@@ -113,7 +115,7 @@ object Catalog {
      * a template swap the hull to its D variant at apply time, exactly as combat damage does, so
      * offering `onslaught_D` alongside `onslaught` would be two paths to one outcome and the first
      * would silently ignore whatever D-mods you chose. Stations, modules and fighter hulls are
-     * excluded because they cannot be a fleet member.
+     * excluded because they cannot be a fleet member -- see [isOwnableHull].
      */
     private fun buildHulls(): List<CatalogEntry> {
         val out = ArrayList<CatalogEntry>()
@@ -427,6 +429,7 @@ object Catalog {
     /** The module map a variant carries, copied out and cleaned of blanks. */
     fun modulesOf(variant: ShipVariantAPI?): Map<String, String> {
         val source = variant.safeGet { this?.stationModules } ?: return emptyMap()
+        if (source.isEmpty()) return emptyMap()
         val out = LinkedHashMap<String, String>()
         runCatching {
             for ((slotId, variantId) in source) {
@@ -434,6 +437,41 @@ object Catalog {
                 out[slotId] = variantId
             }
         }
+        return out
+    }
+
+    /**
+     * Hulls that exist only as somebody's module, and so are not ships you can pick.
+     *
+     * The `MODULE` hint is the intended marker and vanilla sets it on every one of them, but it is
+     * easy to leave out of a hull's data and a fair number of mods do -- which drops a ship's armour
+     * plates, weapon platforms and structural struts into the hull picker right next to the ship they
+     * belong to. So the list is worked out instead of trusted: every variant in the game is asked what
+     * it bolts into its module slots, and whatever comes back is a module.
+     *
+     * Built once, off spec data that cannot change after load, and only when the hull list is indexed.
+     *
+     * A hull with module slots of its own is kept even when something else carries it as a module: a
+     * ship that has modules is a ship first, and there are modded designs where one is both.
+     */
+    private val moduleHulls: Set<String>
+        get() = moduleHullCache ?: findModuleHulls().also { moduleHullCache = it }
+
+    private fun findModuleHulls(): Set<String> {
+        val started = System.nanoTime()
+        val found = HashSet<String>()
+        val variantIds = runCatching { Global.getSettings().allVariantIds }.getOrNull().orEmpty()
+        for (variantId in variantIds.filterNotNull()) {
+            for (moduleVariantId in modulesOf(variant(variantId)).values) {
+                val hullId = variant(moduleVariantId).safeGet { this?.hullSpec?.hullId }.orEmpty()
+                if (hullId.isNotEmpty()) found += hullId
+            }
+        }
+        val out = found.filterTo(HashSet()) { moduleSlotIds(it).isEmpty() }
+        Global.getLogger(Catalog::class.java).info(
+            "StarterPack: found ${out.size} module hulls across ${variantIds.size} variants in " +
+                "${(System.nanoTime() - started) / 1_000_000} ms; they are hidden from the hull picker"
+        )
         return out
     }
 
@@ -470,12 +508,16 @@ object Catalog {
      * a high-tech strut, which is also tagged `MODULE` and so is excluded anyway; but mods put it on
      * real ships (UAF's `uaf_m_machi_apa`, a civilian troop transport), and treating it as a filter
      * made those ships silently unpickable while their combat siblings showed up fine.
+     *
+     * Modules are excluded twice over: by their hint, and by [moduleHulls] for the mods that do not
+     * set it.
      */
     private fun isOwnableHull(spec: ShipHullSpecAPI): Boolean {
+        if (spec.hullSize == ShipAPI.HullSize.FIGHTER) return false
+        if (spec.safeGet { hullId }.orEmpty() in moduleHulls) return false
         val hints = spec.hints ?: return true
         if (hints.contains(ShipHullSpecAPI.ShipTypeHints.STATION)) return false
         if (hints.contains(ShipHullSpecAPI.ShipTypeHints.MODULE)) return false
-        if (spec.hullSize == ShipAPI.HullSize.FIGHTER) return false
         return true
     }
 
