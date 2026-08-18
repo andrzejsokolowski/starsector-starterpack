@@ -109,9 +109,9 @@ class Template(
 /**
  * One ship and its complete refit.
  *
- * [baseVariant] is a convenience, not a dependency: picking a stock variant in the editor copies its
- * loadout into the fields below and is then forgotten. The applier never reads it, so a template
- * cannot break when a mod renames a variant.
+ * Stock variants are a convenience, not a dependency: picking one in the editor copies its loadout
+ * into the fields below and is then forgotten -- nothing here records which variant it came from, so
+ * a template cannot break when a mod renames one.
  */
 class ShipEntry(
     var hullId: String = "",
@@ -136,6 +136,15 @@ class ShipEntry(
     val weapons: MutableMap<String, String> = LinkedHashMap(),
     /** Fighter wing per bay index. A null entry leaves that bay empty. */
     val wings: MutableList<String?> = ArrayList(),
+
+    /**
+     * Station modules per slot id, e.g. `WS 026` -> `module_onslaught_armor_left_Standard`.
+     *
+     * Only multi-module hulls have any. Empty means "whatever this hull's own stock layout is", which
+     * is what the applier falls back to -- so a template written before this field existed still
+     * builds its modules, and a hull whose modules were never chosen still gets the right ones.
+     */
+    val modules: MutableMap<String, String> = LinkedHashMap(),
 
     /**
      * Weapon groups, or empty to let the game auto-generate them. Auto-generation is the default
@@ -168,6 +177,9 @@ class ShipEntry(
             // bay 0 with a filled bay 1 has to survive the round trip as exactly that.
             put("wings", JSONArray().also { array -> wings.forEach { array.put(it ?: JSONObject.NULL) } })
         }
+        if (modules.isNotEmpty()) {
+            put("modules", JSONObject().also { obj -> modules.forEach { (slot, id) -> obj.put(slot, id) } })
+        }
         if (weaponGroups.isNotEmpty()) {
             put("weaponGroups", JSONArray().also { array -> weaponGroups.forEach { array.put(it.toJson()) } })
         }
@@ -187,6 +199,7 @@ class ShipEntry(
             dMods = json.optJSONArray("dMods").toIdList(),
             weapons = json.optJSONObject("weapons").toStringMap(),
             wings = json.optJSONArray("wings").toNullableIdList(),
+            modules = json.optJSONObject("modules").toStringMap(),
             weaponGroups = json.optJSONArray("weaponGroups").mapObjects { WeaponGroup.fromJson(it) },
             combatReadiness = if (json.has("cr")) json.optDouble("cr", 1.0).toFloat() else null,
         )

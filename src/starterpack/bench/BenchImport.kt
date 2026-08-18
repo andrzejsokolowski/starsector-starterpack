@@ -58,6 +58,7 @@ object BenchImport {
             decomposeHullMods(variant, entry)
             readWeapons(variant, entry)
             readWings(variant, entry)
+            readModules(variant, entry)
             true
         }.getOrElse {
             warnings += "Could not read the loadout for '${entry.hullId}': ${it.message}"
@@ -168,6 +169,20 @@ object BenchImport {
 
         entry.wings.clear()
         entry.wings.addAll(out)
+    }
+
+    /**
+     * Station modules, by slot.
+     *
+     * Only ids the game can still resolve are recorded. Refitting a module inside the bench gives it a
+     * throwaway variant id that will not exist next session, and writing one of those into the
+     * template would turn a module that works into a module that is missing -- so those slots keep
+     * whatever the template already had.
+     */
+    private fun readModules(variant: ShipVariantAPI, entry: ShipEntry) {
+        for ((slotId, variantId) in Catalog.modulesOf(variant)) {
+            if (Catalog.variantExists(variantId)) entry.modules[slotId] = variantId
+        }
     }
 
     /**

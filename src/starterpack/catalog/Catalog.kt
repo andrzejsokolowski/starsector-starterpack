@@ -5,6 +5,7 @@ import com.fs.starfarer.api.ModSpecAPI
 import com.fs.starfarer.api.campaign.SpecialItemSpecAPI
 import com.fs.starfarer.api.combat.ShipAPI
 import com.fs.starfarer.api.combat.ShipHullSpecAPI
+import com.fs.starfarer.api.combat.ShipVariantAPI
 import com.fs.starfarer.api.combat.WeaponAPI
 import com.fs.starfarer.api.impl.campaign.ids.Tags
 import com.fs.starfarer.api.impl.campaign.skills.FluxRegulation
@@ -349,6 +350,15 @@ object Catalog {
     fun hullModSpec(modId: String): HullModSpecAPI? =
         if (modId.isBlank()) null else runCatching { Global.getSettings().getHullModSpec(modId) }.getOrNull()
 
+    fun variantExists(variantId: String): Boolean =
+        variantId.isNotBlank() &&
+            runCatching { Global.getSettings().doesVariantExist(variantId) }.getOrDefault(false)
+
+    /** Resolves a variant id, or null if the current mod list does not define it. */
+    fun variant(variantId: String): ShipVariantAPI? =
+        if (!variantExists(variantId)) null
+        else runCatching { Global.getSettings().getVariant(variantId) }.getOrNull()
+
     /**
      * Weapons that fit a given slot, in catalogue order.
      *
@@ -375,6 +385,80 @@ object Catalog {
         val spec = hullModSpec(modId) ?: return 0
         return spec.safeInt { getCostFor(size ?: ShipAPI.HullSize.FRIGATE) }
     }
+
+    // --- Station modules -------------------------------------------------------------------------
+
+    /**
+     * The station-module slot ids on a hull, in declaration order.
+     *
+     * A slot of this type does not hold a weapon, it holds a whole ship. Any hull with one is a
+     * multi-module ship -- vanilla's Onslaught Mk.I, every station, and a good number of modded
+     * capitals -- and its modules are most of what makes it that ship rather than a bare core hull.
+     */
+    fun moduleSlotIds(hullId: String): List<String> = moduleSlotIds(hullSpec(hullId))
+
+    fun moduleSlotIds(spec: ShipHullSpecAPI?): List<String> =
+        spec.safeGet { this?.allWeaponSlotsCopy }.orEmpty()
+            .filterNotNull()
+            .filter { it.safeBool { isStationModule } }
+            .mapNotNull { it.safeGet { id } }
+
+    /**
+     * The module layout the game's own content gives a hull: slot id -> module variant id.
+     *
+     * There is no such thing as "the hull's modules" to read directly -- modules live on the
+     * *variant*, and the hull only declares the slots they go in. So the layout is borrowed from a
+     * stock variant of the same hull, which is where the game gets it from when it spawns one.
+     *
+     * The codex's own pick comes first where a hull names one, then the ordinary stock variants, and
+     * the engine's auto-generated `_Hull` variant last. That one does carry the modules, but stripped
+     * of their weapons, so it is right only when there is nothing better to copy.
+     */
+    fun defaultModules(hullId: String): Map<String, String> {
+        val slots = moduleSlotIds(hullId)
+        if (slots.isEmpty()) return emptyMap()
+        for (variantId in moduleDonorIds(hullId)) {
+            val modules = modulesOf(variant(variantId)).filterKeys { it in slots }
+            if (modules.isNotEmpty()) return modules
+        }
+        return emptyMap()
+    }
+
+    /** The module map a variant carries, copied out and cleaned of blanks. */
+    fun modulesOf(variant: ShipVariantAPI?): Map<String, String> {
+        val source = variant.safeGet { this?.stationModules } ?: return emptyMap()
+        val out = LinkedHashMap<String, String>()
+        runCatching {
+            for ((slotId, variantId) in source) {
+                if (slotId.isNullOrBlank() || variantId.isNullOrBlank()) continue
+                out[slotId] = variantId
+            }
+        }
+        return out
+    }
+
+    /** What a module is called: its hull's name, which is what the refit screen puts on the tab. */
+    fun moduleName(variantId: String?): String {
+        val id = variantId.orEmpty().trim()
+        if (id.isEmpty()) return ""
+        return variant(id).safeGet { this?.hullSpec?.hullName }.orEmpty().ifBlank { id }
+    }
+
+    private fun moduleDonorIds(hullId: String): List<String> {
+        val emptyHull = "$hullId$EMPTY_HULL_SUFFIX"
+        val stock = runCatching { Global.getSettings().hullIdToVariantListMap?.getList(hullId) }
+            .getOrNull().orEmpty().filterNotNull()
+        val codex = hullSpec(hullId).safeGet { this?.codexVariantId }.orEmpty().trim()
+
+        val out = LinkedHashSet<String>()
+        if (codex.isNotEmpty() && codex != emptyHull) out += codex
+        out += stock.filter { it != emptyHull }
+        out += emptyHull
+        return out.toList()
+    }
+
+    /** Suffix of the empty-hull variant the engine generates for every hull. */
+    private const val EMPTY_HULL_SUFFIX = "_Hull"
 
     // --- Labels --------------------------------------------------------------------------------
 

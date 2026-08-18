@@ -232,6 +232,11 @@ object TemplateApplier {
         }
         if (validDMods.isNotEmpty()) runCatching { DModManager.setDHull(variant) }
 
+        // --- Modules ---
+        // After the D-hull swap, which replaces the hull spec outright, and before anything is
+        // fitted: the modules are part of what the ship *is*, not part of its loadout.
+        installModules(variant, entry, warnings)
+
         // --- Weapons ---
         for ((slotId, weaponId) in entry.weapons) {
             if (Catalog.weaponSpec(weaponId) == null) {
@@ -312,6 +317,64 @@ object TemplateApplier {
         applyWeaponGroups(variant, entry)
 
         return variant
+    }
+
+    /**
+     * Fills the hull's station-module slots.
+     *
+     * A multi-module ship keeps its modules on the *variant*, not on the hull -- the hull only
+     * declares the slots they sit in -- so a variant built from an empty one has none at all, and the
+     * ship lands in the fleet as its bare core hull with every module missing. That is what this
+     * fixes.
+     *
+     * The layout comes from the template when it recorded one and from the hull's own stock variant
+     * otherwise, which is what lets templates written before modules were tracked start working again
+     * without the ship having to be removed and re-added.
+     *
+     * Slot ids are checked against the hull the ship is actually being built on -- the (D) version by
+     * this point, if D-mods swapped it. The engine reads this map back without checking that the slot
+     * exists, so a stale id is not an empty module, it is a crash the next time anything draws the
+     * ship.
+     */
+    private fun installModules(variant: ShipVariantAPI, entry: ShipEntry, warnings: MutableList<String>) {
+        val slots = Catalog.moduleSlotIds(runCatching { variant.hullSpec }.getOrNull())
+        if (slots.isEmpty()) return
+
+        // Looked up under the template's own hull id: a (D) hull has no stock variants of its own to
+        // borrow a layout from, and its module slots are the base hull's anyway.
+        val defaults = Catalog.defaultModules(entry.hullId)
+
+        val wanted = LinkedHashMap<String, String>()
+        for (slotId in slots) {
+            val chosen = entry.modules[slotId]?.trim().orEmpty().let { fromTemplate ->
+                when {
+                    fromTemplate.isEmpty() -> defaults[slotId]
+                    Catalog.variantExists(fromTemplate) -> fromTemplate
+                    // A named module from a mod that is now off falls back to the hull's own rather
+                    // than leaving the slot empty: half a ship is a worse answer than a stock module.
+                    else -> {
+                        warnings += "Module '$fromTemplate' on '${entry.hullId}' is not in your mod " +
+                            "list -- the hull's own module was used instead."
+                        defaults[slotId]
+                    }
+                }
+            }
+            if (chosen != null && Catalog.variantExists(chosen)) wanted[slotId] = chosen
+        }
+
+        val unfilled = slots.size - wanted.size
+        if (unfilled > 0) {
+            warnings += "'${entry.hullId}' has $unfilled module slot(s) nothing in this mod list can " +
+                "fill -- it was built without those modules."
+        }
+        if (wanted.isEmpty()) return
+
+        // getStationModules() hands back the variant's live map, and that map is where the engine
+        // reads the layout from. setModuleVariant is not the way in here: it exists to override a
+        // module with a *custom* variant and does nothing at all when handed a stock one.
+        runCatching { variant.stationModules.putAll(wanted) }.onFailure {
+            warnings += "Could not install modules on '${entry.hullId}': ${it.message}"
+        }
     }
 
     /**

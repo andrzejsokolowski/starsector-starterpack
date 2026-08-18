@@ -166,6 +166,7 @@ object ShipsTab {
                         ship.weapons.clear()
                         ship.wings.clear()
                         ship.weaponGroups.clear()
+                        ship.modules.clear()
                     }
                 }
             }
@@ -318,6 +319,29 @@ object ShipsTab {
                     ) { entry ->
                         SetupPanel.edit { ship.wings[bay] = entry.id }
                     }
+                }
+            }
+        }
+
+        // --- Modules ---
+        // Shown, not editable. Which modules a hull takes is fixed by its design -- the refit screen
+        // will not swap them either -- so the only thing worth saying here is which ones you are
+        // getting, and that they are coming at all.
+        val moduleSlots = Catalog.moduleSlotIds(ship.hullId)
+        if (moduleSlots.isNotEmpty()) {
+            addSectionHeading("Modules (${moduleSlots.size})", Alignment.MID, 12f)
+            addPara(
+                "This hull carries ships of its own. They are built and handed over with it, and " +
+                    "loading a stock loadout brings that variant's modules along with its weapons.",
+                Misc.getGrayColor(), 2f,
+            )
+            val defaultModules = Catalog.defaultModules(ship.hullId)
+            for ((index, slotId) in moduleSlots.withIndex()) {
+                val moduleId = ship.modules[slotId]?.takeIf { it.isNotBlank() } ?: defaultModules[slotId]
+                if (moduleId == null) {
+                    addPara("Module ${index + 1}: nothing in your mod list fits this slot.", DANGER, 2f)
+                } else {
+                    addPara("Module ${index + 1}: %s", 2f, Misc.getHighlightColor(), Catalog.moduleName(moduleId))
                 }
             }
         }
@@ -523,6 +547,15 @@ object ShipsTab {
         ship.sMods.clear()
         ship.permaMods.clear()
         ship.weaponGroups.clear()
+        ship.modules.clear()
+
+        // Modules are part of what a stock variant *is* -- two variants of one modular hull can carry
+        // different ones -- so they come across with the loadout rather than being left to the
+        // applier's default.
+        val moduleSlots = Catalog.moduleSlotIds(ship.hullId)
+        if (moduleSlots.isNotEmpty()) {
+            ship.modules.putAll(Catalog.modulesOf(variant).filterKeys { it in moduleSlots })
+        }
 
         for (slotId in Catalog.fittableSlots(ship.hullId).map { it.id }) {
             runCatching { variant.getWeaponId(slotId) }.getOrNull()?.let { ship.weapons[slotId] = it }

@@ -22,6 +22,7 @@ campaign you own does not touch them, and they are plain JSON if you would rathe
 | | |
 |---|---|
 | **Ships** | Hull, custom name, flagship, vents/capacitors, a weapon per slot, a fighter wing per bay |
+| **Modules** | Multi-module hulls keep their modules; loading a stock loadout brings that variant's |
 | **Hullmods** | Regular (cost OP), S-mods (built in, count against the limit), free built-ins (permanent, no S-mod cost), D-mods |
 | **Cargo** | Commodities, loose weapons, fighter LPCs, hullmod blueprints, special items |
 | **Character** | Credits, unspent skill points, story points, level |
