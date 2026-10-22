@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.CampaignFleetAPI
 import com.fs.starfarer.api.campaign.CargoAPI
 import com.fs.starfarer.api.campaign.PersistentUIDataAPI.AbilitySlotsAPI
 import com.fs.starfarer.api.campaign.SpecialItemData
+import com.fs.starfarer.api.combat.ShipHullSpecAPI
 import com.fs.starfarer.api.combat.ShipVariantAPI
 import com.fs.starfarer.api.fleet.FleetMemberAPI
 import com.fs.starfarer.api.fleet.FleetMemberType
@@ -237,14 +238,41 @@ object TemplateApplier {
         // fitted: the modules are part of what the ship *is*, not part of its loadout.
         installModules(variant, entry, warnings)
 
+        fitLoadout(variant, entry, hullSpec, "'${entry.hullId}'", warnings)
+
+        for (modId in validDMods) {
+            runCatching {
+                // Mirrors DModManager: un-suppress first, in case the D-hull we just swapped to
+                // already carries this mod in a suppressed state.
+                variant.removeSuppressedMod(modId)
+                variant.addPermaMod(modId, false)
+            }
+        }
+
+        return variant
+    }
+
+    /**
+     * Fits everything a refit can change: weapons, fighters, hullmods, flux and weapon groups.
+     *
+     * Shared by ships and their modules, which differ only in what happens around it -- a ship also
+     * gets its D-hull swap, its modules and its D-mods. [label] names the ship or module in warnings.
+     */
+    private fun fitLoadout(
+        variant: ShipVariantAPI,
+        entry: ShipEntry,
+        hullSpec: ShipHullSpecAPI,
+        label: String,
+        warnings: MutableList<String>,
+    ) {
         // --- Weapons ---
         for ((slotId, weaponId) in entry.weapons) {
             if (Catalog.weaponSpec(weaponId) == null) {
-                warnings += "Unknown weapon '$weaponId' on '${entry.hullId}' -- slot $slotId left empty."
+                warnings += "Unknown weapon '$weaponId' on $label -- slot $slotId left empty."
                 continue
             }
             runCatching { variant.addWeapon(slotId, weaponId) }.onFailure {
-                warnings += "Could not fit '$weaponId' into slot $slotId on '${entry.hullId}'."
+                warnings += "Could not fit '$weaponId' into slot $slotId on $label."
             }
         }
 
@@ -262,22 +290,22 @@ object TemplateApplier {
             if (wingId == null) continue
             val bayIndex = fittableBayIndices.getOrNull(position)
             if (bayIndex == null) {
-                warnings += "'${entry.hullId}' has no bay ${position + 1} -- wing '$wingId' skipped."
+                warnings += "$label has no bay ${position + 1} -- wing '$wingId' skipped."
                 continue
             }
             if (Catalog.wingSpec(wingId) == null) {
-                warnings += "Unknown fighter wing '$wingId' on '${entry.hullId}' -- bay left empty."
+                warnings += "Unknown fighter wing '$wingId' on $label -- bay left empty."
                 continue
             }
             runCatching { variant.setWingId(bayIndex, wingId) }.onFailure {
-                warnings += "Could not fit wing '$wingId' into bay ${position + 1} on '${entry.hullId}'."
+                warnings += "Could not fit wing '$wingId' into bay ${position + 1} on $label."
             }
         }
 
         // --- Hullmods ---
         for (modId in entry.hullMods) {
             if (Catalog.hullModSpec(modId) == null) {
-                warnings += "Unknown hullmod '$modId' on '${entry.hullId}' -- skipped."
+                warnings += "Unknown hullmod '$modId' on $label -- skipped."
                 continue
             }
             runCatching { variant.addMod(modId) }
@@ -286,25 +314,17 @@ object TemplateApplier {
         // OP, but only an S-mod counts against the ship's built-in limit and shows the S-mod bonus.
         for (modId in entry.sMods) {
             if (Catalog.hullModSpec(modId) == null) {
-                warnings += "Unknown S-mod '$modId' on '${entry.hullId}' -- skipped."
+                warnings += "Unknown S-mod '$modId' on $label -- skipped."
                 continue
             }
             runCatching { variant.addPermaMod(modId, true) }
         }
         for (modId in entry.permaMods) {
             if (Catalog.hullModSpec(modId) == null) {
-                warnings += "Unknown built-in hullmod '$modId' on '${entry.hullId}' -- skipped."
+                warnings += "Unknown built-in hullmod '$modId' on $label -- skipped."
                 continue
             }
             runCatching { variant.addPermaMod(modId, false) }
-        }
-        for (modId in validDMods) {
-            runCatching {
-                // Mirrors DModManager: un-suppress first, in case the D-hull we just swapped to
-                // already carries this mod in a suppressed state.
-                variant.removeSuppressedMod(modId)
-                variant.addPermaMod(modId, false)
-            }
         }
 
         // --- Flux ---
@@ -315,8 +335,6 @@ object TemplateApplier {
 
         // --- Weapon groups ---
         applyWeaponGroups(variant, entry)
-
-        return variant
     }
 
     /**
@@ -335,6 +353,9 @@ object TemplateApplier {
      * this point, if D-mods swapped it. The engine reads this map back without checking that the slot
      * exists, so a stale id is not an empty module, it is a crash the next time anything draws the
      * ship.
+     *
+     * A module id the refit bench left behind is never used, only replaced by the hull's own: see
+     * [Catalog.isStableModuleId] for why such an id can name another ship's module.
      */
     private fun installModules(variant: ShipVariantAPI, entry: ShipEntry, warnings: MutableList<String>) {
         val slots = Catalog.moduleSlotIds(runCatching { variant.hullSpec }.getOrNull())
@@ -349,6 +370,10 @@ object TemplateApplier {
             val chosen = entry.modules[slotId]?.trim().orEmpty().let { fromTemplate ->
                 when {
                     fromTemplate.isEmpty() -> defaults[slotId]
+                    !Catalog.isStableModuleId(fromTemplate) -> {
+                        log.info("StarterPack: ignored refit-bench module id '$fromTemplate' on '${entry.hullId}'")
+                        defaults[slotId]
+                    }
                     Catalog.variantExists(fromTemplate) -> fromTemplate
                     // A named module from a mod that is now off falls back to the hull's own rather
                     // than leaving the slot empty: half a ship is a worse answer than a stock module.
@@ -374,7 +399,51 @@ object TemplateApplier {
         // module with a *custom* variant and does nothing at all when handed a stock one.
         runCatching { variant.stationModules.putAll(wanted) }.onFailure {
             warnings += "Could not install modules on '${entry.hullId}': ${it.message}"
+            return
         }
+
+        // --- Refitted modules ---
+        // Here setModuleVariant *is* the way in, because what it is handed is a custom variant. It
+        // keeps the object on the ship -- and in the save -- so nothing has to find it by id again.
+        for ((slotId, stockId) in wanted) {
+            val loadout = entry.moduleLoadouts[slotId] ?: continue
+            val label = "'${entry.hullId}' module ${slots.indexOf(slotId) + 1}"
+            val module = buildModuleVariant(loadout, stockId, label, warnings) ?: continue
+            runCatching { variant.setModuleVariant(slotId, module) }.onFailure {
+                warnings += "Could not fit the refitted $label: ${it.message}"
+            }
+        }
+    }
+
+    /**
+     * Builds one refitted module from its stored loadout.
+     *
+     * The variant keeps the stock module's id, as the game's own refit does with a module: anything
+     * that looks the module up by id still finds a real one of the right hull. A loadout recorded on
+     * a different hull -- the mod has since changed what goes in this slot -- is not forced onto the
+     * new one, whose slot ids mean something else; the module keeps its standard loadout instead.
+     */
+    private fun buildModuleVariant(
+        loadout: ShipEntry,
+        stockId: String,
+        label: String,
+        warnings: MutableList<String>,
+    ): ShipVariantAPI? {
+        val stock = Catalog.variant(stockId) ?: return null
+        val hullSpec = runCatching { stock.hullSpec }.getOrNull() ?: return null
+        if (loadout.hullId.isNotBlank() && loadout.hullId != hullSpec.hullId) {
+            warnings += "$label is a different part than when it was refitted -- it kept its standard loadout."
+            return null
+        }
+        val module = runCatching { Global.getSettings().createEmptyVariant(stockId, hullSpec) }.getOrElse {
+            warnings += "Could not build the refitted $label: ${it.message}"
+            return null
+        }
+        module.source = VariantSource.REFIT
+        runCatching { module.setVariantDisplayName(stock.displayName) }
+        runCatching { stock.tags?.toList()?.forEach { module.addTag(it) } }
+        fitLoadout(module, loadout, hullSpec, label, warnings)
+        return module
     }
 
     /**

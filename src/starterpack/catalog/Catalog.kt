@@ -12,6 +12,7 @@ import com.fs.starfarer.api.impl.campaign.skills.FluxRegulation
 import com.fs.starfarer.api.loading.Description
 import com.fs.starfarer.api.loading.FighterWingSpecAPI
 import com.fs.starfarer.api.loading.HullModSpecAPI
+import com.fs.starfarer.api.loading.VariantSource
 import com.fs.starfarer.api.loading.WeaponSlotAPI
 import com.fs.starfarer.api.loading.WeaponSpecAPI
 import com.fs.starfarer.api.plugins.impl.CoreAutofitPlugin
@@ -420,11 +421,45 @@ object Catalog {
         val slots = moduleSlotIds(hullId)
         if (slots.isEmpty()) return emptyMap()
         for (variantId in moduleDonorIds(hullId)) {
-            val modules = modulesOf(variant(variantId)).filterKeys { it in slots }
+            val modules = modulesOf(variant(variantId)).filter { (slot, id) -> slot in slots && isStableModuleId(id) }
             if (modules.isNotEmpty()) return modules
         }
         return emptyMap()
     }
+
+    /**
+     * Whether a module variant id is safe to keep in a template and look up again later.
+     *
+     * Only the game's own module variants are: the stock ones, and the `_Hull` ones it generates.
+     * Everything a refit saves is not. A mission refit renames every module of the ship it saves to
+     * `mission_<mission>_ship_<10000 + ship index + module index>`, so ship 1's second module and
+     * ship 2's first module get the same id and the later save overwrites the earlier one. A template
+     * that holds one of those ids builds whichever module was saved under it last, which is how an
+     * Anthracite ended up with a Neoyselif armour plate for an arm.
+     *
+     * An id the current mod list does not define is kept: it belongs to a mod that is turned off,
+     * and the applier already falls back for it while reporting the gap.
+     */
+    fun isStableModuleId(variantId: String?): Boolean {
+        val id = variantId.orEmpty().trim()
+        if (id.isEmpty() || MISSION_SAVE_ID.matches(id)) return false
+        val source = variant(id)?.safeGet { source } ?: return true
+        return source == VariantSource.STOCK || source == VariantSource.HULL
+    }
+
+    /**
+     * The module a ship actually gets in a slot: the template's own pick when it is stable and still
+     * defined, otherwise the hull's stock module [default] -- the same choice the applier makes.
+     */
+    fun resolveModule(chosen: String?, default: String?): String? =
+        chosen?.trim()?.takeIf { isStableModuleId(it) && variantExists(it) } ?: default
+
+    /** The hull a module variant is built on, or null if the variant is not defined. */
+    fun moduleHullId(variantId: String?): String? =
+        variant(variantId.orEmpty().trim()).safeGet { this?.hullSpec?.hullId }?.takeIf { it.isNotBlank() }
+
+    /** The id a mission refit gives a saved ship or module. See [isStableModuleId]. */
+    private val MISSION_SAVE_ID = Regex("""^mission_.+_ship_\d+$""")
 
     /** The module map a variant carries, copied out and cleaned of blanks. */
     fun modulesOf(variant: ShipVariantAPI?): Map<String, String> {

@@ -147,6 +147,18 @@ class ShipEntry(
     val modules: MutableMap<String, String> = LinkedHashMap(),
 
     /**
+     * The loadout fitted on a module, per slot id, for modules that have been refitted.
+     *
+     * Each one is a ship entry of its own whose [hullId] is the module's hull. A slot not listed here
+     * gets its module exactly as the module's own stock variant has it, so an untouched module keeps
+     * following whatever the mod that adds it ships.
+     *
+     * Only the loadout fields mean anything on a module: name, flagship, CR, D-mods and modules of
+     * its own are ignored.
+     */
+    val moduleLoadouts: MutableMap<String, ShipEntry> = LinkedHashMap(),
+
+    /**
      * Weapon groups, or empty to let the game auto-generate them. Auto-generation is the default
      * because hand-maintaining groups through weapon changes is tedious and the game's grouping is
      * usually what you wanted anyway.
@@ -180,6 +192,11 @@ class ShipEntry(
         if (modules.isNotEmpty()) {
             put("modules", JSONObject().also { obj -> modules.forEach { (slot, id) -> obj.put(slot, id) } })
         }
+        if (moduleLoadouts.isNotEmpty()) {
+            put("moduleLoadouts", JSONObject().also { obj ->
+                moduleLoadouts.forEach { (slot, loadout) -> obj.put(slot, loadout.toJson()) }
+            })
+        }
         if (weaponGroups.isNotEmpty()) {
             put("weaponGroups", JSONArray().also { array -> weaponGroups.forEach { array.put(it.toJson()) } })
         }
@@ -200,6 +217,7 @@ class ShipEntry(
             weapons = json.optJSONObject("weapons").toStringMap(),
             wings = json.optJSONArray("wings").toNullableIdList(),
             modules = json.optJSONObject("modules").toStringMap(),
+            moduleLoadouts = json.optJSONObject("moduleLoadouts").toEntryMap(),
             weaponGroups = json.optJSONArray("weaponGroups").mapObjects { WeaponGroup.fromJson(it) },
             combatReadiness = if (json.has("cr")) json.optDouble("cr", 1.0).toFloat() else null,
         )
@@ -447,6 +465,17 @@ private fun JSONArray.optIdOrNull(index: Int): String? {
     if (isNull(index)) return null
     val id = optString(index, "").trim()
     return if (id.isEmpty() || id == "null") null else id
+}
+
+private fun JSONObject?.toEntryMap(): MutableMap<String, ShipEntry> {
+    val out = LinkedHashMap<String, ShipEntry>()
+    val json = this ?: return out
+    val keys = json.keys()
+    while (keys.hasNext()) {
+        val key = keys.next() as String
+        json.optJSONObject(key)?.let { out[key] = ShipEntry.fromJson(it) }
+    }
+    return out
 }
 
 private fun JSONObject?.toStringMap(): MutableMap<String, String> {

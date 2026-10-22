@@ -8,6 +8,7 @@ import com.fs.starfarer.api.ui.CustomPanelAPI
 import com.fs.starfarer.api.ui.TooltipMakerAPI
 import com.fs.starfarer.api.util.Misc
 import com.fs.starfarer.api.loading.WeaponSlotAPI
+import starterpack.bench.BenchImport
 import starterpack.bench.BenchState
 import starterpack.catalog.Catalog
 import starterpack.catalog.CatalogEntry
@@ -147,6 +148,11 @@ object ShipsTab {
             return
         }
 
+        editingModule?.takeIf { it.first === ship }?.let { (_, slotId) ->
+            if (buildModuleEditor(inner, ship, slotId)) return
+        }
+        editingModule = null
+
         val hullSpec = Catalog.hullSpec(ship.hullId)
         val hullSize = hullSpec?.hullSize
 
@@ -167,6 +173,7 @@ object ShipsTab {
                         ship.wings.clear()
                         ship.weaponGroups.clear()
                         ship.modules.clear()
+                        ship.moduleLoadouts.clear()
                     }
                 }
             }
@@ -225,9 +232,147 @@ object ShipsTab {
             )
         }
 
+        buildModuleList(inner, ship)
+
+        buildLoadout(inner, ship, ship.hullId, hullSize, attach = {})
+
+        modSection(
+            inner, "D-mods", ship.dMods, hullSize,
+            emptyNote = "Adding any D-mod also swaps the hull to its (D) version, exactly as battle " +
+                "damage does.",
+            pickerTitle = "Add a D-mod",
+            entries = { Catalog.entries(CatalogKind.DMOD) },
+            showCost = false,
+            attach = {},
+        )
+    }
+
+    // --- Modules ---------------------------------------------------------------------------------
+
+    /**
+     * The module the editor is showing instead of the ship, as (ship, slot id), or null for the ship.
+     *
+     * Held against the ship object rather than its index, so selecting another ship by any route --
+     * the list, a removal, a template switch -- lands back on that ship's own editor without every
+     * route having to reset this.
+     */
+    private var editingModule: Pair<ShipEntry, String>? = null
+
+    /**
+     * The ship's modules, one button each, which open that module in the editor.
+     *
+     * Which module goes in a slot is fixed by the hull's design -- the refit screen will not swap one
+     * either -- so a module is opened to change what is fitted on it, the way the refit screen's
+     * module tabs work.
+     */
+    private fun TooltipMakerAPI.buildModuleList(inner: Float, ship: ShipEntry) {
+        val moduleSlots = Catalog.moduleSlotIds(ship.hullId)
+        if (moduleSlots.isEmpty()) return
+
+        addSectionHeading("Modules (${moduleSlots.size})", Alignment.MID, 12f)
+        addPara(
+            "This hull carries ships of its own. They are built and handed over with it. Open one to " +
+                "change what is fitted on it.",
+            Misc.getGrayColor(), 2f,
+        )
+        val defaults = Catalog.defaultModules(ship.hullId)
+        for ((index, slotId) in moduleSlots.withIndex()) {
+            val moduleId = Catalog.resolveModule(ship.modules[slotId], defaults[slotId])
+            if (moduleId == null) {
+                addPara("Module ${index + 1}: nothing in your mod list fits this slot.", DANGER, 2f)
+                continue
+            }
+            val refitted = storedModuleLoadout(ship, slotId, moduleId) != null
+            val state = if (refitted) "refitted" else "standard loadout"
+            buttons(inner, 24f, 4f, listOf(
+                RowButton("Module ${index + 1}: ${Catalog.moduleName(moduleId)} ($state)") {
+                    editingModule = ship to slotId
+                    SetupPanel.markDirty()
+                },
+            ))
+        }
+    }
+
+    /**
+     * One module's refit: the same loadout sections as a ship, minus what a module cannot have.
+     *
+     * A module nobody has refitted is shown from its stock variant and only stored in the template
+     * on the first change, so looking at one changes nothing and an untouched module keeps following
+     * the mod that adds it. Returns false, drawing nothing, when the slot no longer resolves.
+     */
+    private fun TooltipMakerAPI.buildModuleEditor(inner: Float, ship: ShipEntry, slotId: String): Boolean {
+        val slots = Catalog.moduleSlotIds(ship.hullId)
+        val index = slots.indexOf(slotId)
+        if (index < 0) return false
+        val moduleId = Catalog.resolveModule(ship.modules[slotId], Catalog.defaultModules(ship.hullId)[slotId])
+            ?: return false
+        val stock = Catalog.variant(moduleId) ?: return false
+        val moduleHullId = Catalog.moduleHullId(moduleId) ?: return false
+        val moduleSize = Catalog.hullSpec(moduleHullId)?.hullSize
+
+        val stored = storedModuleLoadout(ship, slotId, moduleId)
+        val part = stored ?: BenchImport.moduleLoadoutOf(stock).also { it.hullId = moduleHullId }
+        // Replaces rather than fills in: a loadout left over from another hull in this slot, after a
+        // mod update, is not the one being shown and must not survive the edit.
+        val attach = { if (ship.moduleLoadouts[slotId] !== part) ship.moduleLoadouts[slotId] = part }
+
+        val shipLabel = ship.shipName.ifBlank { Catalog.nameOf(CatalogKind.HULL, ship.hullId) }
+        addSectionHeading("Module ${index + 1}: ${Catalog.moduleName(moduleId)}", Alignment.MID, 0f)
+        addPara(
+            if (stored != null) "Part of %s. Refitted: this loadout is built instead of the standard one."
+            else "Part of %s. Standard loadout: it is stored only once you change something.",
+            2f, Misc.getHighlightColor(), shipLabel,
+        )
+        buttons(inner, 24f, 8f, listOf(
+            RowButton("Back to the ship") {
+                editingModule = null
+                SetupPanel.markDirty()
+            },
+            RowButton("Reset to standard", color = DANGER, enabled = stored != null) {
+                SetupPanel.edit { ship.moduleLoadouts.remove(slotId) }
+            },
+            RowButton("Strip everything", color = DANGER) {
+                SetupPanel.edit {
+                    attach()
+                    part.weapons.clear()
+                    part.wings.clear()
+                    part.hullMods.clear()
+                    part.sMods.clear()
+                    part.permaMods.clear()
+                    part.weaponGroups.clear()
+                    part.vents = 0
+                    part.capacitors = 0
+                }
+            },
+        ))
+
+        buildLoadout(inner, part, moduleHullId, moduleSize, attach)
+        return true
+    }
+
+    /** The module's stored refit, if it has one for the module that is actually in the slot. */
+    private fun storedModuleLoadout(ship: ShipEntry, slotId: String, moduleId: String): ShipEntry? =
+        ship.moduleLoadouts[slotId]?.takeIf { it.hullId == Catalog.moduleHullId(moduleId) }
+
+    // --- Loadout ---------------------------------------------------------------------------------
+
+    /**
+     * Everything a refit can change on [part]: flux, weapons, fighters and the three hullmod lists.
+     *
+     * Shared by ships and modules. [hullId] is the hull the slots belong to, and [attach] runs before
+     * every change -- it is how a module shown from its stock loadout joins the template the moment
+     * it is first edited.
+     */
+    private fun TooltipMakerAPI.buildLoadout(
+        inner: Float,
+        part: ShipEntry,
+        hullId: String,
+        hullSize: ShipAPI.HullSize?,
+        attach: () -> Unit,
+    ) {
         // --- Ordnance ---
-        val totalOp = Catalog.baseOrdnancePoints(ship.hullId)
-        val usedOp = usedOrdnancePoints(ship, hullSize)
+        val totalOp = Catalog.baseOrdnancePoints(hullId)
+        val usedOp = usedOrdnancePoints(part, hullSize)
         val overBudget = usedOp > totalOp
         addSectionHeading("Ordnance", Alignment.MID, 12f)
         addPara(
@@ -247,15 +392,17 @@ object ShipsTab {
         // before we know which skills the character will have, so a skilled build stays reachable.
         val fluxCap = Catalog.maxFluxUpgrades(hullSize)
         val baseFluxCap = Catalog.baseFluxUpgradeCap(hullSize)
-        intRow("Vents", ship.vents, inner, SetupPanel.bindings, max = fluxCap, labelWidth = LABEL_W,
+        intRow("Vents", part.vents, inner, SetupPanel.bindings, max = fluxCap, labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() }) { value ->
-            ship.vents = value
+            attach()
+            part.vents = value
             SetupPanel.markSaveNeeded()
         }
-        intRow("Capacitors", ship.capacitors, inner, SetupPanel.bindings, max = fluxCap,
+        intRow("Capacitors", part.capacitors, inner, SetupPanel.bindings, max = fluxCap,
             labelWidth = LABEL_W,
             onStepped = { SetupPanel.markDirty() }) { value ->
-            ship.capacitors = value
+            attach()
+            part.capacitors = value
             SetupPanel.markSaveNeeded()
         }
         addPara(
@@ -265,15 +412,15 @@ object ShipsTab {
         )
 
         // --- Weapons ---
-        val slots = Catalog.fittableSlots(ship.hullId)
-        addSectionHeading("Weapons (${slots.count { ship.weapons.containsKey(it.id) }}/${slots.size})",
+        val slots = Catalog.fittableSlots(hullId)
+        addSectionHeading("Weapons (${slots.count { part.weapons.containsKey(it.id) }}/${slots.size})",
             Alignment.MID, 12f)
         if (slots.isEmpty()) {
             addPara("This hull has no weapon slots you can fit.", Misc.getGrayColor(), 4f)
         }
         val slotLabels = slotLabels(slots)
         for (slot in slots) {
-            val fitted = ship.weapons[slot.id]
+            val fitted = part.weapons[slot.id]
             val label = slotLabels[slot.id] ?: slot.id
             pickerRow(
                 label,
@@ -281,7 +428,7 @@ object ShipsTab {
                 inner,
                 isEmpty = fitted == null,
                 labelWidth = LABEL_W,
-                onClear = { SetupPanel.edit { ship.weapons.remove(slot.id) } },
+                onClear = { SetupPanel.edit { attach(); part.weapons.remove(slot.id) } },
             ) {
                 // Filtered by the engine's own weaponFits, so the list holds only what will actually
                 // mount here -- forty candidates instead of eighteen hundred.
@@ -290,97 +437,74 @@ object ShipsTab {
                     Catalog.weaponsFitting(slot),
                     fitted,
                 ) { entry ->
-                    SetupPanel.edit { ship.weapons[slot.id] = entry.id }
+                    SetupPanel.edit { attach(); part.weapons[slot.id] = entry.id }
                 }
             }
         }
 
         // --- Fighters ---
-        val bays = Catalog.fittableBayCount(ship.hullId)
+        val bays = Catalog.fittableBayCount(hullId)
         if (bays > 0) {
             addSectionHeading("Fighter bays ($bays)", Alignment.MID, 12f)
-            // The model's wing list is positional, so it has to be at least as long as the bay count
-            // before a later bay can be addressed.
-            while (ship.wings.size < bays) ship.wings.add(null)
             for (bay in 0 until bays) {
-                val fitted = ship.wings.getOrNull(bay)
+                val fitted = part.wings.getOrNull(bay)
                 pickerRow(
                     "Bay ${bay + 1}",
                     fitted?.let { Catalog.nameOf(CatalogKind.FIGHTER, it) } ?: "(empty)",
                     inner,
                     isEmpty = fitted == null,
                     labelWidth = LABEL_W,
-                    onClear = { SetupPanel.edit { ship.wings[bay] = null } },
+                    onClear = { SetupPanel.edit { attach(); setWing(part, bay, null) } },
                 ) {
                     SetupPanel.openPicker(
                         "Choose a fighter wing for bay ${bay + 1}",
                         Catalog.entries(CatalogKind.FIGHTER),
                         fitted,
                     ) { entry ->
-                        SetupPanel.edit { ship.wings[bay] = entry.id }
+                        SetupPanel.edit { attach(); setWing(part, bay, entry.id) }
                     }
-                }
-            }
-        }
-
-        // --- Modules ---
-        // Shown, not editable. Which modules a hull takes is fixed by its design -- the refit screen
-        // will not swap them either -- so the only thing worth saying here is which ones you are
-        // getting, and that they are coming at all.
-        val moduleSlots = Catalog.moduleSlotIds(ship.hullId)
-        if (moduleSlots.isNotEmpty()) {
-            addSectionHeading("Modules (${moduleSlots.size})", Alignment.MID, 12f)
-            addPara(
-                "This hull carries ships of its own. They are built and handed over with it, and " +
-                    "loading a stock loadout brings that variant's modules along with its weapons.",
-                Misc.getGrayColor(), 2f,
-            )
-            val defaultModules = Catalog.defaultModules(ship.hullId)
-            for ((index, slotId) in moduleSlots.withIndex()) {
-                val moduleId = ship.modules[slotId]?.takeIf { it.isNotBlank() } ?: defaultModules[slotId]
-                if (moduleId == null) {
-                    addPara("Module ${index + 1}: nothing in your mod list fits this slot.", DANGER, 2f)
-                } else {
-                    addPara("Module ${index + 1}: %s", 2f, Misc.getHighlightColor(), Catalog.moduleName(moduleId))
                 }
             }
         }
 
         // --- Hullmods ---
         modSection(
-            inner, "Hullmods", ship.hullMods, hullSize,
+            inner, "Hullmods", part.hullMods, hullSize,
             emptyNote = "Regular hullmods. These cost ordnance points and can be removed in refit.",
             pickerTitle = "Add a hullmod",
             entries = { Catalog.entries(CatalogKind.HULLMOD) },
             showCost = true,
+            attach = attach,
         )
 
         modSection(
-            inner, "S-mods (built in, count against the limit)", ship.sMods, hullSize,
+            inner, "S-mods (built in, count against the limit)", part.sMods, hullSize,
             emptyNote = "Permanent, free of ordnance points, and counted against the ship's built-in limit " +
                 "exactly as spending a story point in refit would.",
             pickerTitle = "Add an S-mod",
             entries = { Catalog.entries(CatalogKind.HULLMOD).filter { canBuildIn(it.id) } },
             showCost = false,
+            attach = attach,
         )
 
         modSection(
-            inner, "Built-in (free, no S-mod limit)", ship.permaMods, hullSize,
+            inner, "Built-in (free, no S-mod limit)", part.permaMods, hullSize,
             emptyNote = "Permanent and free, but NOT counted as S-mods -- the ship keeps its full " +
                 "story-point allowance. There is no way to get this in a normal game.",
             pickerTitle = "Add a free built-in hullmod",
             entries = { Catalog.entries(CatalogKind.HULLMOD).filter { canBuildIn(it.id) } },
             showCost = false,
+            attach = attach,
         )
+    }
 
-        modSection(
-            inner, "D-mods", ship.dMods, hullSize,
-            emptyNote = "Adding any D-mod also swaps the hull to its (D) version, exactly as battle " +
-                "damage does.",
-            pickerTitle = "Add a D-mod",
-            entries = { Catalog.entries(CatalogKind.DMOD) },
-            showCost = false,
-        )
+    /**
+     * Puts a wing in a bay. The model's wing list is positional, so it is padded out to the bay
+     * first -- here, at the moment of an edit, so that drawing the editor never changes the model.
+     */
+    private fun setWing(part: ShipEntry, bay: Int, wingId: String?) {
+        while (part.wings.size <= bay) part.wings.add(null)
+        part.wings[bay] = wingId
     }
 
     // --- Sections --------------------------------------------------------------------------------
@@ -400,6 +524,7 @@ object ShipsTab {
         pickerTitle: String,
         entries: () -> List<CatalogEntry>,
         showCost: Boolean,
+        attach: () -> Unit,
     ) {
         addSectionHeading("$heading (${mods.size})", Alignment.MID, 12f)
         addPara(emptyNote, Misc.getGrayColor(), 2f)
@@ -411,12 +536,13 @@ object ShipsTab {
             pickerRow(
                 "", label, inner,
                 labelWidth = 8f,
-                onClear = { SetupPanel.edit { mods.remove(modId) } },
+                onClear = { SetupPanel.edit { attach(); mods.remove(modId) } },
             ) {
                 // Clicking the mod itself swaps it for another, which is what you want far more often
                 // than removing and re-adding.
                 SetupPanel.openPicker(pickerTitle, entries(), modId) { entry ->
                     SetupPanel.edit {
+                        attach()
                         val index = mods.indexOf(modId)
                         if (index >= 0 && entry.id !in mods) mods[index] = entry.id
                     }
@@ -427,7 +553,7 @@ object ShipsTab {
         buttons(inner, 24f, 4f, listOf(
             RowButton("Add") {
                 SetupPanel.openPicker(pickerTitle, entries()) { entry ->
-                    SetupPanel.edit { if (entry.id !in mods) mods += entry.id }
+                    SetupPanel.edit { attach(); if (entry.id !in mods) mods += entry.id }
                 }
             },
         ))
@@ -548,13 +674,16 @@ object ShipsTab {
         ship.permaMods.clear()
         ship.weaponGroups.clear()
         ship.modules.clear()
+        ship.moduleLoadouts.clear()
 
         // Modules are part of what a stock variant *is* -- two variants of one modular hull can carry
         // different ones -- so they come across with the loadout rather than being left to the
-        // applier's default.
+        // applier's default. Each arrives with its own stock loadout, so any refit of the old ones goes.
         val moduleSlots = Catalog.moduleSlotIds(ship.hullId)
         if (moduleSlots.isNotEmpty()) {
-            ship.modules.putAll(Catalog.modulesOf(variant).filterKeys { it in moduleSlots })
+            ship.modules.putAll(
+                Catalog.modulesOf(variant).filter { (slot, id) -> slot in moduleSlots && Catalog.isStableModuleId(id) }
+            )
         }
 
         for (slotId in Catalog.fittableSlots(ship.hullId).map { it.id }) {

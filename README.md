@@ -22,7 +22,7 @@ campaign you own does not touch them, and they are plain JSON if you would rathe
 | | |
 |---|---|
 | **Ships** | Hull, custom name, flagship, vents/capacitors, a weapon per slot, a fighter wing per bay |
-| **Modules** | Multi-module hulls keep their modules; loading a stock loadout brings that variant's |
+| **Modules** | Multi-module hulls keep their modules, and each module has its own weapons, fighters, vents/capacitors and hullmods; loading a stock loadout brings that variant's modules |
 | **Hullmods** | Regular (cost OP), S-mods (built in, count against the limit), free built-ins (permanent, no S-mod cost), D-mods |
 | **Cargo** | Commodities, loose weapons, fighter LPCs, hullmod blueprints, special items |
 | **Character** | Credits, unspent skill points, story points, level |
@@ -57,7 +57,8 @@ combat engine to exist. In exchange the ships are matched by fleet member id rat
 so a loadout can never land on the wrong ship.
 
 Weapons, fighters, vents, capacitors, hullmods, S-mods and **weapon groups** come back. Weapon groups
-have no editor of their own here, so the bench is the only way to set them.
+have no editor of their own here, so the bench is the only way to set them. On a multi-module ship
+the same goes for every module you fit on its own tab.
 
 Adding and removing ships stays in the editor — a mission's fleet is fixed by its definition. D-mods
 and free built-ins also stay in the editor, since the refit screen cannot grant either, though it

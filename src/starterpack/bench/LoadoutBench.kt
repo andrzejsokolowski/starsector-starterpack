@@ -1,5 +1,7 @@
 package starterpack.bench
 
+import com.fs.starfarer.api.Global
+import com.fs.starfarer.api.combat.ShipVariantAPI
 import com.fs.starfarer.api.fleet.FleetGoal
 import com.fs.starfarer.api.fleet.FleetMemberType
 import com.fs.starfarer.api.mission.FleetSide
@@ -87,6 +89,7 @@ object LoadoutBench {
         }
 
         BenchState.recordMembers(memberIds)
+        BenchState.recordBaseline(memberIds.size)
 
         api.addToFleet(FleetSide.ENEMY, OPPONENT_VARIANT, FleetMemberType.SHIP, "Formality", false)
         api.addPlugin(BenchCapture())
@@ -132,8 +135,19 @@ object BenchState {
         awaitingReturn = true
     }
 
+    /**
+     * What the variant store held under each bench ship's saved id when the bench was first built,
+     * by ship index, or null when the bench has not been built since the last import.
+     *
+     * A refit saved in the bench registers a new object under the id, so comparing against this is
+     * how [BenchImport.consumeOnReturn] tells a ship refitted on this trip from one left on disk by
+     * an earlier session.
+     */
+    private var baseline: MutableMap<Int, Any?>? = null
+
     fun clearAwaiting() {
         awaitingReturn = false
+        clearBaseline()
     }
 
     fun recordMembers(ids: List<String>) {
@@ -142,8 +156,35 @@ object BenchState {
 
     fun memberIds(): List<String> = memberIds
 
+    /**
+     * Notes the saved ship under each index the bench is about to build, unless already noted.
+     *
+     * The game builds the mission again whenever it is reselected or reset, and a refit saved before
+     * that must still count as new, so an index is only ever recorded the first time.
+     */
+    fun recordBaseline(shipCount: Int) {
+        val map = baseline ?: HashMap<Int, Any?>().also { baseline = it }
+        for (index in 0 until shipCount) {
+            if (!map.containsKey(index)) map[index] = savedMissionVariant(index)
+        }
+    }
+
+    fun baseline(): Map<Int, Any?>? = baseline
+
+    fun clearBaseline() {
+        baseline = null
+    }
+
     /** The id the game gives ship [index] of a mission's player fleet once it has been refitted. */
     fun missionVariantId(index: Int): String = "mission_${LoadoutBench.MISSION_ID}_ship_$index"
+
+    /** The refitted ship the game has saved for bench ship [index], or null if there is none. */
+    fun savedMissionVariant(index: Int): ShipVariantAPI? {
+        val settings = Global.getSettings() ?: return null
+        val id = missionVariantId(index)
+        if (!runCatching { settings.doesVariantExist(id) }.getOrDefault(false)) return null
+        return runCatching { settings.getVariant(id) }.getOrNull()
+    }
 
     /**
      * The template the mission should build.
