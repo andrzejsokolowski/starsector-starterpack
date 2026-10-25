@@ -17,7 +17,6 @@ Made for testing, and unashamed about it. This is a cheat mod. That is the point
 
 
 Templates are stored per installation, not per save. Delete every campaign you own and they are still there.
-The code is fully open source. You don't have to credit me. Claude Code built this anyway.
 [color=red]Requires [b]LazyLib[/b]. Console Commands is optional.[/color]
 [/b][/center]
 [spoiler=Screenshots]
@@ -98,6 +97,18 @@ Yes. It hands you a fleet, money and story points on request. It's a testing too
 [b]Why build a whole editor instead of capturing my current fleet?[/b]
 Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
 [/spoiler]
+[spoiler=AI use disclaimer]Some or all assets and code in this mod were created using AI tools:
+[list]
+[li]Code: Claude Code (Claude Opus 5 and Claude Opus 5.5)[/li]
+[li]Text (readme and this post): Claude Code (Claude Opus 5 and Claude Opus 5.5)[/li]
+[li]Icons: Gemini[/li][/list]
+[/spoiler]
+
+[spoiler=License]
+This mod is under the CC0 (Creative Commons Zero) License, allowing you to do whatever you want with the code, without giving any credit to anyone.
+The UIFramework code by Starficz inside it keeps its own licence (LGPL-3.0).
+[/spoiler]
+
 [spoiler=Version log]
 1.2.0
 Modules can be refitted. Open a module of a multi-module ship in the editor and fit it like a ship, or fit it on its tab in the refit bench, and the pack starts the ship with that loadout.
