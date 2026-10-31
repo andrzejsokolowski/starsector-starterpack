@@ -26,6 +26,7 @@ campaign you own does not touch them, and they are plain JSON if you would rathe
 | **Hullmods** | Regular (cost OP), S-mods (built in, count against the limit), free built-ins (permanent, no S-mod cost), D-mods |
 | **Cargo** | Commodities, loose weapons, fighter LPCs, hullmod blueprints, special items |
 | **Character** | Credits, unspent skill points, story points, level |
+| **Reputation** | One standing for every faction, plus single factions on top of it, from -100 to 100 |
 | **Hotbar** | All five bars, ten slots each, with per-slot hyperspace overrides |
 
 The *free built-ins* list has no equivalent in a normal game: those hullmods are permanent and cost
@@ -35,6 +36,14 @@ allowance on top.
 **Load a stock loadout** on the ship editor copies any vanilla or modded variant of that hull into
 the template in one click. That is usually the fastest way to start — pick the closest stock variant,
 then change what you want.
+
+## Faction standings
+
+The CHARACTER tab sets where you stand with each faction, on the same -100 to 100 scale as the
+console's `setrelation`. Tick *Set my standing with every faction* to give one value to every faction
+the intel screen lists, then add single factions to override it: everyone at 0 but the pirates at
+-50, say. Hidden factions such as the Remnant are left out of "every faction" but can be added one by
+one. Leave it all unset and the standings stay as the campaign start made them.
 
 ## The refit bench
 

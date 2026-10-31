@@ -34,6 +34,7 @@ class ApplyResult(
     val cargoStacks: Int = 0,
     val abilitiesGranted: Int = 0,
     val hotbarSlots: Int = 0,
+    val reputationsSet: Int = 0,
     val warnings: List<String> = emptyList(),
     val failure: String? = null,
 ) {
@@ -47,6 +48,7 @@ class ApplyResult(
         if (cargoStacks > 0) parts += "$cargoStacks cargo stacks"
         if (abilitiesGranted > 0) parts += "$abilitiesGranted abilities"
         if (hotbarSlots > 0) parts += "$hotbarSlots hotbar slots"
+        if (reputationsSet > 0) parts += "$reputationsSet faction standing${if (reputationsSet == 1) "" else "s"}"
         return if (parts.isEmpty()) "nothing to apply" else parts.joinToString(", ")
     }
 }
@@ -158,6 +160,9 @@ object TemplateApplier {
             warnings += "No player character; skill points, story points and level were skipped."
         }
 
+        // --- Reputation ----------------------------------------------------------------------
+        val reputationsSet = applyReputations(template, warnings)
+
         // --- Abilities and hotbar ------------------------------------------------------------
         val abilitiesGranted = grantAbilities(template.hotbar, warnings)
         val hotbarSlots = applyHotbar(template.hotbar, warnings)
@@ -171,11 +176,57 @@ object TemplateApplier {
             cargoStacks = cargoStacks,
             abilitiesGranted = abilitiesGranted,
             hotbarSlots = hotbarSlots,
+            reputationsSet = reputationsSet,
             warnings = warnings,
         )
         log.info("StarterPack: applied \"${template.name}\" -- ${result.describe()}")
         warnings.forEach { log.warn("StarterPack: $it") }
         return result
+    }
+
+    // --- Reputation ----------------------------------------------------------------------------
+
+    /**
+     * Sets the player's standing with each faction the template names, and returns how many were set.
+     *
+     * "All factions" covers the ones the intel screen lists, then the per-faction values are laid on
+     * top, so `all -50, independent 0` reads the way it is written. The standing is set on the player
+     * faction, which is what the console's `setrelation` does: the game keeps one number per pair and
+     * either side can write it.
+     */
+    private fun applyReputations(template: Template, warnings: MutableList<String>): Int {
+        if (template.allReputation == null && template.reputations.isEmpty()) return 0
+        val sector = Global.getSector() ?: return 0
+        val player = sector.playerFaction
+        if (player == null) {
+            warnings += "No player faction; faction standings were skipped."
+            return 0
+        }
+
+        val targets = LinkedHashMap<String, Int>()
+        template.allReputation?.let { value ->
+            for (faction in sector.allFactions.orEmpty()) {
+                if (faction == null || faction.id == Factions.PLAYER) continue
+                if (!runCatching { faction.isShowInIntelTab }.getOrDefault(false)) continue
+                targets[faction.id] = value
+            }
+        }
+        for ((factionId, value) in template.reputations) {
+            if (factionId == Factions.PLAYER) continue
+            if (sector.getFaction(factionId) == null) {
+                warnings += "Unknown faction '$factionId' -- its standing was left as the game set it."
+                continue
+            }
+            targets[factionId] = value
+        }
+
+        var set = 0
+        for ((factionId, value) in targets) {
+            runCatching { player.setRelationship(factionId, Template.clampReputation(value) / 100f) }
+                .onSuccess { set++ }
+                .onFailure { warnings += "Could not set the standing with '$factionId': ${it.message}" }
+        }
+        return set
     }
 
     // --- Fleet ---------------------------------------------------------------------------------

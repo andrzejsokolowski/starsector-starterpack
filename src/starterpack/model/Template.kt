@@ -52,6 +52,16 @@ class Template(
     /** Character level to set, or null to leave it alone. Levelling does not itself grant points. */
     var level: Int? = null,
 
+    // --- Reputation --------------------------------------------------------------------------
+    /**
+     * Standing with every faction the intel screen lists, from -100 to 100, or null to keep the
+     * standings the campaign start gave you. Hidden factions (Remnant, Derelict, Omega) are left out,
+     * since "every faction" means the ones you can see; [reputations] can still name them.
+     */
+    var allReputation: Int? = null,
+    /** Standing per faction id, from -100 to 100. Wins over [allReputation] for the factions it names. */
+    val reputations: MutableMap<String, Int> = LinkedHashMap(),
+
     // --- Hotbar ------------------------------------------------------------------------------
     var hotbar: Hotbar = Hotbar(),
 ) {
@@ -67,6 +77,10 @@ class Template(
         credits?.let { parts += "${it}cr" }
         if (skillPoints > 0) parts += "${skillPoints}sp"
         if (storyPoints > 0) parts += "${storyPoints}story"
+        allReputation?.let { parts += "all factions at $it" }
+        if (reputations.isNotEmpty()) {
+            parts += "${reputations.size} faction standing${if (reputations.size == 1) "" else "s"}"
+        }
         if (hotbar.assignedCount() > 0) parts += "${hotbar.assignedCount()} hotbar slots"
         return if (parts.isEmpty()) "empty" else parts.joinToString(", ")
     }
@@ -83,12 +97,22 @@ class Template(
         put("skillPoints", skillPoints)
         put("storyPoints", storyPoints)
         level?.let { put("level", it) }
+        allReputation?.let { put("allReputation", it) }
+        if (reputations.isNotEmpty()) {
+            put("reputations", JSONObject().also { obj -> reputations.forEach { (id, value) -> obj.put(id, value) } })
+        }
         put("hotbar", hotbar.toJson())
     }
 
     companion object {
         const val FORMAT_VERSION = 1
         const val KEY_VERSION = "formatVersion"
+
+        /** The game's own scale, as the console's `setrelation` uses it: -100 vengeful to 100 cooperative. */
+        const val MIN_REPUTATION = -100
+        const val MAX_REPUTATION = 100
+
+        fun clampReputation(value: Int): Int = value.coerceIn(MIN_REPUTATION, MAX_REPUTATION)
 
         fun fromJson(json: JSONObject): Template = Template(
             name = json.optString("name", "Unnamed"),
@@ -101,6 +125,9 @@ class Template(
             skillPoints = json.optInt("skillPoints", 0),
             storyPoints = json.optInt("storyPoints", 0),
             level = if (json.has("level")) json.optInt("level") else null,
+            allReputation = if (json.has("allReputation")) clampReputation(json.optInt("allReputation")) else null,
+            reputations = json.optJSONObject("reputations").toIntMap()
+                .mapValuesTo(LinkedHashMap()) { (_, value) -> clampReputation(value) },
             hotbar = json.optJSONObject("hotbar")?.let { Hotbar.fromJson(it) } ?: Hotbar(),
         )
     }

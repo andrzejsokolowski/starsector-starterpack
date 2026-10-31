@@ -7,6 +7,7 @@ import com.fs.starfarer.api.combat.ShipAPI
 import com.fs.starfarer.api.combat.ShipHullSpecAPI
 import com.fs.starfarer.api.combat.ShipVariantAPI
 import com.fs.starfarer.api.combat.WeaponAPI
+import com.fs.starfarer.api.impl.campaign.ids.Factions
 import com.fs.starfarer.api.impl.campaign.ids.Tags
 import com.fs.starfarer.api.impl.campaign.skills.FluxRegulation
 import com.fs.starfarer.api.loading.Description
@@ -56,6 +57,7 @@ enum class CatalogKind {
     COMMODITY,
     SPECIAL_ITEM,
     ABILITY,
+    FACTION,
 }
 
 /**
@@ -72,6 +74,7 @@ object Catalog {
 
     private const val VANILLA = "Vanilla"
     private const val UNSPECIFIED = "-"
+    private const val LISTED_FACTION = "Listed"
 
     private val cache = HashMap<CatalogKind, List<CatalogEntry>>()
     private val byId = HashMap<CatalogKind, Map<String, CatalogEntry>>()
@@ -88,6 +91,7 @@ object Catalog {
             CatalogKind.COMMODITY -> buildCommodities()
             CatalogKind.SPECIAL_ITEM -> buildSpecialItems()
             CatalogKind.ABILITY -> buildAbilities()
+            CatalogKind.FACTION -> buildFactions()
         }
         Global.getLogger(Catalog::class.java).info(
             "StarterPack: indexed ${built.size} $kind entries in ${(System.nanoTime() - started) / 1_000_000} ms"
@@ -304,6 +308,28 @@ object Catalog {
                 .error("StarterPack: could not read abilities.csv; the hotbar picker will be empty.", it)
         }
         return out.sortedBy { it.name.lowercase() }
+    }
+
+    /**
+     * Every faction but the player's own, the intel screen's ones first.
+     *
+     * Hidden factions (Remnant, Derelict, Omega) are listed too, below the rest: the template's
+     * "all factions" value skips them, so this picker is the only way to set them.
+     */
+    private fun buildFactions(): List<CatalogEntry> {
+        val out = ArrayList<CatalogEntry>()
+        for (spec in Global.getSettings().allFactionSpecs.orEmpty()) {
+            if (spec == null || spec.id == Factions.PLAYER) continue
+            out += CatalogEntry(
+                id = spec.id,
+                name = spec.displayName.orEmpty().ifBlank { spec.id },
+                primary = if (spec.safeBool { isShowInIntelTab }) LISTED_FACTION else "Hidden",
+                secondary = spec.id,
+                sourceMod = UNSPECIFIED,       // faction specs do not carry their source mod
+                sprite = spec.safeGet { crest }.orEmpty(),
+            )
+        }
+        return out.sortedWith(compareBy({ it.primary != LISTED_FACTION }, { it.name.lowercase() }))
     }
 
     // --- Hull introspection --------------------------------------------------------------------

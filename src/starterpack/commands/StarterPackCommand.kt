@@ -93,6 +93,10 @@ class StarterPackCommand : BaseCommand {
                     "${ship.vents}v/${ship.capacitors}c"
             )
         }
+        template.allReputation?.let { Console.showMessage("  Standing with every listed faction: $it") }
+        for ((factionId, value) in template.reputations) {
+            Console.showMessage("  Standing with $factionId: $value")
+        }
         return CommandResult.SUCCESS
     }
 

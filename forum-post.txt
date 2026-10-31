@@ -11,7 +11,7 @@ WHAT DOES THIS MOD DO?
 Do you start a lot of campaigns? Do you spend the first ten minutes of each one buying the same three ships, bolting on the same weapons, spending the same skill points and dragging the same abilities onto the same hotbar keys?
 Do it once. Save it. Every new game after that starts with it already done.
 
-Ships with their weapons, fighters, hullmods, S-mods and D-mods. Your cargo, your credits, your skill points, your story points. All five hotbar rows, ten slots each, hyperspace overrides included.
+Ships with their weapons, fighters, hullmods, S-mods and D-mods. Your cargo, your credits, your skill points, your story points, your standing with every faction. All five hotbar rows, ten slots each, hyperspace overrides included.
 Made for testing, and unashamed about it. This is a cheat mod. That is the point.
 
 
@@ -61,6 +61,7 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [list]
 [li][b]Cargo[/b]: commodities, loose weapons, fighter LPCs, hullmod blueprints and special items -- AI cores, colony items, ship and industry blueprints.[/li]
 [li][b]Character[/b]: credits, unspent skill points, story points and level. Leave credits or level blank to keep whatever the campaign start gave you.[/li]
+[li][b]Reputation[/b]: one standing for every faction at once, then single factions on top of it. Everyone neutral but the pirates hostile is two rows, not a console command per faction.[/li]
 [li][b]Hotbar[/b]: all five bars, ten slots each, with a separate [b]hyperspace override[/b] per slot. Anything you slot is also taught to your character, so the key works the moment the campaign starts.[/li]
 [/list]
 [hr][center][size=12pt][b]How It Gets Applied[/b][/size][/center][hr]
@@ -110,6 +111,9 @@ The UIFramework code by Starficz inside it keeps its own licence (LGPL-3.0).
 [/spoiler]
 
 [spoiler=Version log]
+1.3.0
+Templates can set your starting standing with factions: one value for every faction, and single factions on top of it.
+
 1.2.0
 Modules can be refitted. Open a module of a multi-module ship in the editor and fit it like a ship, or fit it on its tab in the refit bench, and the pack starts the ship with that loadout.
 Fixed modules getting swapped between multi-module ships, such as an Anthracite getting a Neoyselif armour plate for an arm, or two left arms. Templates that already picked up a wrong module go back to the right one.
