@@ -1,0 +1,42 @@
+Version 1.3.0 (2026-10-31)
+- Templates can set your starting standing with factions, on the CHARACTER tab: one value for every faction the intel screen lists, and single factions on top of it (for example everyone at 0 but the pirates at -50). Hidden factions such as the Remnant can be added one by one.
+
+Version 1.2.0 (2026-10-22)
+- Modules of multi-module ships can be refitted. Open a module in the editor and fit it like a ship, or fit it on its tab in the refit bench, and the pack starts the ship with that loadout.
+- Fixed modules getting swapped between multi-module ships, such as an Anthracite getting a Neoyselif armour plate for an arm, or two left arms. Templates that already picked up a wrong module go back to the right one.
+- Fixed the refit bench reloading its last saved loadouts over the active template every time the game started.
+
+Version 1.1.5 (2026-08-18)
+- Station modules, armour plates and other ship parts no longer show up in the hull picker.
+
+Version 1.1.4
+- Fixed multi-module ships spawning without their modules.
+
+Version 1.1.3 (2026-08-12)
+- Renamed the refit mission to "! StarterPack Refit Bench" so it stands out in a long mission list.
+
+Version 1.1.2
+- Fixed the refit bench crashing the game. Renamed the button to "Customize in Refit Screen". 1.1.0 and 1.1.1 are both broken, use this one.
+
+Version 1.1.1
+- Fixed 1.1.0 crashing the game on startup. Still broken; replaced by 1.1.2.
+
+Version 1.1.0
+- Added the refit bench: fit your template's ships in the game's own refit screen, reached as a mission from the main menu, and StarterPack reads the result back. Weapon groups and autofire are now part of a template.
+
+Version 1.0.1 (2026-08-10)
+- Linked the mod to its forum thread, so mod managers and Version Checker can track it.
+
+Version 1.0.0 (2026-08-09)
+- First release.
+
+Version 0.2.1
+- Removed the 999 cap on skill and story point grants.
+
+Version 0.2.0
+- Fixed hotbars and fighter bays loading corrupted. Existing templates repair themselves on load.
+- Fixed ships tagged UNDER_PARENT missing from the hull picker.
+- Vents and capacitors respect the game's per-hull-size limit, weapon slots have readable names, and pickers show the game's descriptions on hover.
+
+Version 0.1.1
+- First public build: main menu editor, five tabs, console command and auto-apply.

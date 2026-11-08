@@ -1,5 +1,6 @@
 {
     "masterVersionFile":"https://raw.githubusercontent.com/andrzejsokolowski/starsector-starterpack/main/starterpack.version",
+    "changelogURL":"https://raw.githubusercontent.com/andrzejsokolowski/starsector-starterpack/main/changelog.txt",
     "modName":"StarterPack",
     "modThreadId":35856,
     "modVersion":
