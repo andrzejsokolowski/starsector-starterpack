@@ -27,16 +27,16 @@ dependencies {
     compileOnly fileTree(dir: "${starsectorPath}/starsector-core", include: '*.jar')
 
     // Library mods we depend on
-    compileOnly fileTree(dir: "${starsectorPath}/mods/LazyLib-3.0.0/jars", include: '*.jar')
+    compileOnly fileTree(dir: "${starsectorPath}/mods", include: '**/LazyLib.jar')
 
     // Console Commands is a SOFT dependency: data/console/commands.csv is only read when the console
     // mod is active, so our command class is never loaded (and never NoClassDefFoundErrors) without it.
-    compileOnly fileTree(dir: "${starsectorPath}/mods/Console Commands-4.0.9/jars", include: '*.jar')
+    compileOnly fileTree(dir: "${starsectorPath}/mods", include: '**/lw_Console.jar')
 
     // Kotlin runtime is provided AT RUNTIME by LazyLib (jars/internal/Kotlin-Runtime.jar) on
     // Starsector's shared classloader, so we compile against it but must NOT bundle our own copy.
     // kotlin.stdlib.default.dependency=false (in gradle.properties) prevents the plugin from adding one.
-    compileOnly files("${starsectorPath}/mods/LazyLib-3.0.0/jars/internal/Kotlin-Runtime.jar")
+    compileOnly fileTree(dir: "${starsectorPath}/mods", include: '**/Kotlin-Runtime.jar')
 }
 
 jar {

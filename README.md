@@ -104,7 +104,7 @@ moment the mod comes back.
 
 ## Requirements
 
-- Starsector 0.98a-RC8
+- Starsector 0.98.5a
 - LazyLib
 - Console Commands (optional)
 
