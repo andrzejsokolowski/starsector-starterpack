@@ -13,7 +13,7 @@ import starterpack.model.Snapshot
  * Kept apart from [TemplateStore] because they are a different thing. A template is built by hand
  * and edited; a snapshot is a copy of a campaign, taken in that campaign and only looked at, renamed
  * or deleted afterwards. Sharing one list would put a 40-ship fleet copied from a save next to the
- * three test ships someone built in the editor, and the console names would collide.
+ * three test ships someone built in the editor.
  *
  * At most one snapshot is [armed]: that one is laid over every new game, instead of the active
  * template. Read and write failures are logged and never fatal, as with the templates.

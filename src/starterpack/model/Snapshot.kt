@@ -55,7 +55,7 @@ class Snapshot(
     var blueprintsSaved: Boolean = true,
 ) {
 
-    /** A one-line summary for list rows and the console. */
+    /** A one-line summary for list rows. */
     fun summary(): String {
         val parts = ArrayList<String>(6)
         val ships = pack.ships.size

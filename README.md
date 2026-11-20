@@ -83,7 +83,7 @@ the templates: templates are built by hand in the editor, snapshots are taken in
 
 **Taking one.** With OddiszCommons 1.1.0 or newer installed, open the **Manage (Y)** screen in the
 campaign, go to the **Others** tab, pick **StarterPack** in its list and press **SAVE A SNAPSHOT**. *Save over it* replaces an older snapshot with
-the campaign as it is now. Without OddiszCommons, run `starterpack snapshot` in the console.
+the campaign as it is now. Snapshots need OddiszCommons; templates do not.
 
 **What it keeps:**
 
@@ -106,7 +106,7 @@ are bought for each campaign. Your name and portrait are the ones you pick for t
 **Starting from one.** Main menu, STARTER PACK, **SNAPSHOTS** tab: tick *Start every new game from
 this snapshot*. Every new game then gets it laid over the start, instead of the active template,
 once per campaign like a template. The tab also shows what each snapshot holds, and renames or
-deletes them. `starterpack snapshot apply <name>` applies one to a campaign that is already running.
+deletes them.
 
 Snapshots live in `saves/common/starterpack/snapshots.json`, next to the templates.
 
@@ -123,12 +123,6 @@ starterpack info <name>          what a template contains
 starterpack status               active template, auto-apply state, this save's history
 starterpack on / off             toggle auto-apply
 
-starterpack snapshot [name]               save this campaign as a snapshot
-starterpack snapshot list                 every saved snapshot
-starterpack snapshot use <name>           start every new game from it
-starterpack snapshot off                  stop starting new games from a snapshot
-starterpack snapshot apply <name> [force] apply a snapshot to this campaign now
-starterpack snapshot blueprints on / off  whether new snapshots save known blueprints
 ```
 
 ## Applied once per campaign
@@ -151,7 +145,7 @@ moment the mod comes back.
 - Starsector 0.98.5a
 - LazyLib
 - Console Commands (optional)
-- OddiszCommons 1.1.0 or newer (optional, for saving snapshots from the Manage screen)
+- OddiszCommons 1.1.0 or newer (optional, needed for snapshots)
 
 ## Credits
 

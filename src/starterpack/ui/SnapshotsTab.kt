@@ -14,7 +14,7 @@ import starterpack.store.SnapshotStore
  *
  * Nothing in a snapshot is edited here. It is a copy of a campaign, so this tab only shows what it
  * holds and lets you rename it, delete it, or pick it as the start of every new game. Taking one
- * happens in a campaign, on the Manage (Y) screen or with the console.
+ * happens in a campaign, on the Manage (Y) screen.
  */
 object SnapshotsTab {
 
@@ -44,9 +44,9 @@ object SnapshotsTab {
         val snapshots = SnapshotStore.all()
         if (snapshots.isEmpty()) {
             addPara(
-                "No snapshots yet. In a campaign, save one on the Manage (Y) screen, Others tab, " +
-                    "StarterPack (needs OddiszCommons), or run %s in the console.",
-                8f, Misc.getGrayColor(), Misc.getHighlightColor(), "starterpack snapshot",
+                "No snapshots yet. In a campaign, save one on the Manage (Y) screen: Others tab, " +
+                    "StarterPack. Needs OddiszCommons.",
+                Misc.getGrayColor(), 8f,
             )
             return
         }

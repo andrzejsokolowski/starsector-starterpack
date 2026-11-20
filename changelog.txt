@@ -1,3 +1,6 @@
+Version 1.6.1 (2026-11-20)
+- Removed the snapshot console commands. Snapshots are taken on the Manage (Y) screen (Others tab, StarterPack) and picked for new games on the main menu SNAPSHOTS tab. The template console commands are unchanged.
+
 Version 1.6.0 (2026-11-20)
 - New switch next to SAVE A SNAPSHOT: "Save known blueprints and hull mods". On by default. Turn it off and the snapshot leaves your known ship, fighter and weapon blueprints and learned hull mods behind, so a new game started from it has to find them again. The console has "starterpack snapshot blueprints on" and "off".
 

@@ -59,6 +59,7 @@ object SnapshotApplier {
 
     private val log = Global.getLogger(SnapshotApplier::class.java)
 
+    /** Runs on a new game, once per campaign: [force] stays false there. */
     fun apply(snapshot: Snapshot, force: Boolean = false): SnapshotResult {
         val sector = Global.getSector() ?: return SnapshotResult(failure = "No campaign is running.")
         val fleet = sector.playerFleet ?: return SnapshotResult(failure = "No player fleet to apply to.")

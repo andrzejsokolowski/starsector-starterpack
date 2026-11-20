@@ -5,15 +5,11 @@ import org.lazywizard.console.BaseCommand.CommandContext
 import org.lazywizard.console.BaseCommand.CommandResult
 import org.lazywizard.console.Console
 import starterpack.apply.TemplateApplier
-import starterpack.model.Snapshot
 import starterpack.model.Template
-import starterpack.snapshot.SnapshotApplier
-import starterpack.snapshot.SnapshotCapture
-import starterpack.store.SnapshotStore
 import starterpack.store.TemplateStore
 
 /**
- * `starterpack [apply|list|info|status|off|snapshot] [name] [force]`
+ * `starterpack [apply|list|info|status|off] [name] [force]`
  *
  * The console half of the mod. The editor at the main menu builds templates; this stamps one onto a
  * running campaign.
@@ -36,7 +32,6 @@ class StarterPackCommand : BaseCommand {
             "on" -> setAutoApply(true)
             "info" -> info(tokens.drop(1))
             "apply" -> apply(tokens.drop(1), context)
-            "snapshot", "snapshots" -> snapshot(tokens.drop(1), context)
             // No subcommand given: the bare word is either a template name or nothing at all, and
             // "starterpack mytest" reading as "apply mytest" is what anyone would expect it to do.
             else -> apply(tokens, context)
@@ -136,137 +131,6 @@ class StarterPackCommand : BaseCommand {
             result.warnings.forEach { Console.showMessage("  - $it") }
         }
         return CommandResult.SUCCESS
-    }
-
-    // --- Snapshots -------------------------------------------------------------------------------
-
-    /**
-     * `starterpack snapshot [save [name] | list | apply <name> [force] | use <name> | off]`
-     *
-     * Bare `starterpack snapshot` saves one, since that is what the word asks for.
-     */
-    private fun snapshot(rest: List<String>, context: CommandContext): CommandResult {
-        val action = rest.firstOrNull()?.lowercase() ?: "save"
-        val name = rest.drop(1).filterNot { it.equals("force", ignoreCase = true) }.joinToString(" ")
-        return when (action) {
-            "list" -> snapshotList()
-            "off" -> {
-                SnapshotStore.setArmed(null)
-                Console.showMessage("StarterPack: new games no longer start from a snapshot.")
-                CommandResult.SUCCESS
-            }
-            "use" -> {
-                val snapshot = resolveSnapshot(name) ?: return CommandResult.ERROR
-                SnapshotStore.setArmed(snapshot)
-                Console.showMessage("StarterPack: new games will start from the snapshot \"${snapshot.name}\".")
-                CommandResult.SUCCESS
-            }
-            "apply" -> snapshotApply(name, rest.any { it.equals("force", ignoreCase = true) }, context)
-            "blueprints" -> snapshotBlueprints(rest.getOrNull(1))
-            "save" -> snapshotSave(rest.drop(1).joinToString(" "), context)
-            else -> snapshotSave(rest.joinToString(" "), context)
-        }
-    }
-
-    /** `starterpack snapshot blueprints [on|off]`: whether new snapshots save known blueprints. */
-    private fun snapshotBlueprints(value: String?): CommandResult {
-        when (value?.lowercase()) {
-            "on" -> SnapshotStore.setSaveBlueprints(true)
-            "off" -> SnapshotStore.setSaveBlueprints(false)
-            null -> {}
-            else -> {
-                Console.showMessage("StarterPack: use 'starterpack snapshot blueprints on' or 'off'.")
-                return CommandResult.BAD_SYNTAX
-            }
-        }
-        val state = if (SnapshotStore.isSaveBlueprints()) "save" else "do not save"
-        Console.showMessage("StarterPack: new snapshots $state known blueprints and hull mods.")
-        return CommandResult.SUCCESS
-    }
-
-    private fun snapshotSave(name: String, context: CommandContext): CommandResult {
-        if (!context.isCampaignAccessible) {
-            Console.showMessage("StarterPack: load the campaign you want to save first.")
-            return CommandResult.WRONG_CONTEXT
-        }
-        val result = try {
-            SnapshotCapture.capture(name.ifBlank { null })
-        } catch (ex: Exception) {
-            Console.showException("StarterPack: taking a snapshot failed.", ex)
-            return CommandResult.ERROR
-        }
-        val snapshot = result.snapshot
-        if (snapshot == null) {
-            Console.showMessage("StarterPack: ${result.failure ?: "nothing was saved."}")
-            return CommandResult.ERROR
-        }
-        val stored = SnapshotStore.add(snapshot)
-        Console.showMessage("StarterPack: saved snapshot \"${stored.name}\" -- ${stored.summary()}")
-        if (!stored.blueprintsSaved) {
-            Console.showMessage("Known blueprints and hull mods were not saved ('starterpack snapshot blueprints on').")
-        }
-        if (result.warnings.isNotEmpty()) {
-            Console.showMessage("${result.warnings.size} thing(s) were left out:")
-            result.warnings.forEach { Console.showMessage("  - $it") }
-        }
-        return CommandResult.SUCCESS
-    }
-
-    private fun snapshotList(): CommandResult {
-        val snapshots = SnapshotStore.all()
-        if (snapshots.isEmpty()) {
-            Console.showMessage("No snapshots yet. Run 'starterpack snapshot' in a campaign to save one.")
-            return CommandResult.SUCCESS
-        }
-        Console.showMessage("StarterPack snapshots (${snapshots.size}), stored in ${SnapshotStore.location()}:")
-        for (snapshot in snapshots) {
-            val marker = if (SnapshotStore.isArmed(snapshot)) " *" else "  "
-            val taken = snapshot.takenOn.ifBlank { snapshot.savedOn }
-            Console.showMessage("$marker ${snapshot.name}  --  $taken  --  ${snapshot.summary()}")
-        }
-        Console.showMessage("* = new games start from it.")
-        return CommandResult.SUCCESS
-    }
-
-    private fun snapshotApply(name: String, force: Boolean, context: CommandContext): CommandResult {
-        if (!context.isCampaignAccessible) {
-            Console.showMessage("StarterPack: start or load a campaign first.")
-            return CommandResult.WRONG_CONTEXT
-        }
-        val snapshot = resolveSnapshot(name) ?: return CommandResult.ERROR
-        val result = try {
-            SnapshotApplier.apply(snapshot, force)
-        } catch (ex: Exception) {
-            Console.showException("StarterPack: applying the snapshot \"${snapshot.name}\" failed.", ex)
-            return CommandResult.ERROR
-        }
-        if (!result.succeeded) {
-            Console.showMessage("StarterPack: ${result.describe()}")
-            return CommandResult.ERROR
-        }
-        Console.showMessage("StarterPack: applied the snapshot \"${snapshot.name}\" -- ${result.describe()}")
-        if (result.warnings.isNotEmpty()) {
-            Console.showMessage("${result.warnings.size} thing(s) could not be applied:")
-            result.warnings.forEach { Console.showMessage("  - $it") }
-        }
-        return CommandResult.SUCCESS
-    }
-
-    /** A blank name means the snapshot set for new games, as a blank template name means the active one. */
-    private fun resolveSnapshot(name: String): Snapshot? {
-        val trimmed = name.trim()
-        if (trimmed.isEmpty()) {
-            val armed = SnapshotStore.armed()
-            if (armed == null) {
-                Console.showMessage("StarterPack: name a snapshot. Run 'starterpack snapshot list' to see them.")
-            }
-            return armed
-        }
-        val found = SnapshotStore.byName(trimmed)
-        if (found == null) {
-            Console.showMessage("StarterPack: no snapshot called \"$trimmed\". Run 'starterpack snapshot list'.")
-        }
-        return found
     }
 
     // --- Helpers ---------------------------------------------------------------------------------

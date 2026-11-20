@@ -54,9 +54,9 @@ object SnapshotCapture {
 
     /**
      * [saveBlueprints] off leaves the known blueprints and hull mods out, for a new game plus that
-     * finds them again. It follows the player's switch unless told otherwise.
+     * finds them again. It follows the player's switch on the snapshot page.
      */
-    fun capture(name: String? = null, saveBlueprints: Boolean = SnapshotStore.isSaveBlueprints()): CaptureResult {
+    fun capture(saveBlueprints: Boolean = SnapshotStore.isSaveBlueprints()): CaptureResult {
         val sector = Global.getSector() ?: return CaptureResult(failure = "No campaign is running.")
         val fleet = sector.playerFleet ?: return CaptureResult(failure = "There is no player fleet to copy.")
 
@@ -69,7 +69,7 @@ object SnapshotCapture {
         snapshot.captain = runCatching { sector.playerPerson?.nameString }.getOrNull().orEmpty().trim()
         snapshot.takenOn = runCatching { sector.clock?.dateString }.getOrNull().orEmpty()
         snapshot.savedOn = runCatching { LocalDate.now().toString() }.getOrDefault("")
-        snapshot.name = name?.trim()?.takeIf { it.isNotEmpty() } ?: defaultName(snapshot)
+        snapshot.name = defaultName(snapshot)
 
         // --- Ships ---------------------------------------------------------------------------
         val shipIndex = IdentityHashMap<FleetMemberAPI, Int>()

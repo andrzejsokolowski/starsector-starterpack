@@ -26,8 +26,8 @@ import kotlin.math.min
  * tab (OddiszCommons 1.1.0) rather than a tab of its own, which Andrzej keeps for bigger mods.
  *
  * This is the only class that names OddiszCommons. [register] is reached only when that mod is
- * enabled, so without it nothing here is ever loaded, and the console's `starterpack snapshot` is
- * the way to take one.
+ * enabled, so without it nothing here is ever loaded. This page is the only way to take a snapshot:
+ * Andrzej keeps the console free of anything a menu already does (1.6.1).
  *
  * Like the main-menu editor, the page rebuilds itself on the next frame after any change rather than
  * patching widgets in place.
@@ -192,7 +192,8 @@ class SnapshotPage : ManagePage {
 
         /**
          * Joins the Others tab. Call only when OddiszCommons is enabled. An OddiszCommons older than
-         * 1.1.0 has no Others tab: then there is no page, and the console takes snapshots.
+         * 1.1.0 has no Others tab: then there is no page and no way to take a snapshot until it is
+         * updated.
          */
         @JvmStatic
         fun register() {
@@ -201,7 +202,7 @@ class SnapshotPage : ManagePage {
             } catch (old: NoSuchMethodError) {
                 Global.getLogger(SnapshotPage::class.java).warn(
                     "StarterPack: OddiszCommons is older than 1.1.0 and has no Others tab. Update it to save " +
-                        "snapshots from the Manage screen; 'starterpack snapshot' in the console works meanwhile."
+                        "snapshots from the Manage screen."
                 )
             }
         }

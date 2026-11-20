@@ -18,7 +18,7 @@ Made for testing, and unashamed about it. This is a cheat mod. That is the point
 
 
 Templates are stored per installation, not per save. Delete every campaign you own and they are still there.
-[color=red]Requires [b]LazyLib[/b]. Console Commands and OddiszCommons are optional.[/color]
+[color=red]Requires [b]LazyLib[/b]. Console Commands is optional. Snapshots need [b]OddiszCommons[/b].[/color]
 [/b][/center]
 [spoiler=Screenshots]
 [center][img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter1.png?raw=true[/img]
@@ -68,7 +68,7 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [hr][center][size=12pt][b]Snapshots: New Game Plus[/b][/size][/center][hr]
 [list]
 [li]Save the campaign you are playing as a [b]snapshot[/b], and start new games from it. Snapshots are kept apart from templates.[/li]
-[li]Save one on the [b]Manage (Y)[/b] screen, [b]Others[/b] tab, [b]StarterPack[/b] (with OddiszCommons 1.1.0 or newer), or with [b]starterpack snapshot[/b] in the console. [b]Save over it[/b] updates an older one.[/li]
+[li]Save one on the [b]Manage (Y)[/b] screen, [b]Others[/b] tab, [b]StarterPack[/b]. Needs OddiszCommons 1.1.0 or newer. [b]Save over it[/b] updates an older one.[/li]
 [li]It keeps [b]every ship[/b] with its loadout, modules, S-mods, D-mods and weapon groups, the flagship and the mothballed ships. Ships start repaired.[/li]
 [li][b]Officers[/b] with their portraits, personalities, levels and skills, on the ships they captained, and [b]AI core captains[/b] with theirs.[/li]
 [li]Your [b]cargo and credits[/b], [b]level, skills, unspent and story points[/b], [b]standing with every faction[/b] and [b]hotbar[/b].[/li]
@@ -81,7 +81,7 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [li]Tick [b]Apply automatically on new game[/b] and forget about it, or run [b]starterpack[/b] in the console once the campaign has started. Console Commands is optional; without it, use the toggle.[/li]
 [li][b]Once per campaign.[/b] A flag in the save records that a pack was applied, so you can't accidentally double your credits and re-add your fleet. Add [b]force[/b] to override it.[/li]
 [li]Whether applying [b]replaces[/b] your starting fleet and hold or [b]adds[/b] to them is per template. Both default to replacing.[/li]
-[li]Console: [b]list[/b], [b]info <name>[/b], [b]status[/b], [b]apply <name>[/b], [b]on[/b] / [b]off[/b], and [b]snapshot[/b], [b]snapshot list[/b], [b]snapshot use <name>[/b], [b]snapshot off[/b], [b]snapshot apply <name>[/b], [b]snapshot blueprints on[/b] / [b]off[/b].[/li]
+[li]Console: [b]list[/b], [b]info <name>[/b], [b]status[/b], [b]apply <name>[/b], [b]on[/b] / [b]off[/b].[/li]
 [/list]
 [hr][center][size=12pt][b]Storage[/b][/size][/center][hr]
 [list]
@@ -123,6 +123,9 @@ The UIFramework code by Starficz inside it keeps its own licence (LGPL-3.0).
 [/spoiler]
 
 [spoiler=Version log]
+1.6.1
+Removed the snapshot console commands. Snapshots are taken on the Manage (Y) screen (Others tab, StarterPack) and picked for new games on the main menu SNAPSHOTS tab. The template console commands are unchanged.
+
 1.6.0
 New switch next to SAVE A SNAPSHOT: "Save known blueprints and hull mods". On by default. Turn it off and the snapshot leaves your known ship, fighter and weapon blueprints and learned hull mods behind, so a new game started from it has to find them again. The console has "starterpack snapshot blueprints on" and "off".
 
