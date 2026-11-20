@@ -48,6 +48,11 @@ class Snapshot(
     val officers: MutableList<OfficerEntry> = ArrayList(),
     /** Ship, weapon and fighter blueprints and hull mods the player knew. */
     var blueprints: Blueprints = Blueprints(),
+    /**
+     * False when the snapshot was taken with "Save known blueprints and hull mods" off (1.6.0): then
+     * [blueprints] is empty on purpose and the new game keeps only what it knows itself.
+     */
+    var blueprintsSaved: Boolean = true,
 ) {
 
     /** A one-line summary for list rows and the console. */
@@ -78,6 +83,7 @@ class Snapshot(
             put("officers", JSONArray().also { array -> officers.forEach { array.put(it.toJson()) } })
         }
         put("blueprints", blueprints.toJson())
+        put("blueprintsSaved", blueprintsSaved)
     }
 
     companion object {
@@ -93,6 +99,8 @@ class Snapshot(
             character = json.optJSONObject("character")?.let { CharacterState.fromJson(it) },
             officers = json.optJSONArray("officers").mapObjects { OfficerEntry.fromJson(it) },
             blueprints = json.optJSONObject("blueprints")?.let { Blueprints.fromJson(it) } ?: Blueprints(),
+            // Snapshots from before the switch always saved them.
+            blueprintsSaved = json.optBoolean("blueprintsSaved", true),
         )
 
         /** 1234567 as "1,234,567", whatever the PC's language: the game's fonts lack other separators. */

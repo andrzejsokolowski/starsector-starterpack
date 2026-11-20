@@ -13,6 +13,7 @@ import starterpack.store.SnapshotStore
 import starterpack.ui.DANGER
 import starterpack.ui.RowButton
 import starterpack.ui.buttons
+import starterpack.ui.checkboxRow
 import starterpack.ui.scrollRegion
 import starterpack.uiframework.ExtendableCustomUIPanelPlugin
 import starterpack.uiframework.clearChildren
@@ -84,13 +85,20 @@ class SnapshotPage : ManagePage {
     private fun TooltipMakerAPI.content(inner: Float) {
         addSectionHeading("Snapshots", Alignment.MID, 0f)
         addPara(
-            "Saves your fleet, officers, cargo, credits, character, faction standings, hotbar and " +
-                "blueprints. A new game can start from it.",
+            "Saves your fleet, officers, cargo, credits, character, faction standings and hotbar. " +
+                "A new game can start from it.",
             Misc.getGrayColor(), 8f,
         )
         buttons(min(360f, inner), 30f, 10f, listOf(
             RowButton("SAVE A SNAPSHOT") { save(null) },
         ))
+        checkboxRow(
+            "Save known blueprints and hull mods",
+            SnapshotStore.isSaveBlueprints(), min(360f, inner), 22f, 6f,
+        ) {
+            SnapshotStore.setSaveBlueprints(!SnapshotStore.isSaveBlueprints())
+            markDirty()
+        }
         if (status.isNotBlank()) addPara(status, Misc.getHighlightColor(), 6f)
 
         val snapshots = SnapshotStore.all()

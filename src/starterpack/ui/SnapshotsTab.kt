@@ -177,10 +177,14 @@ object SnapshotsTab {
         addPara("Faction standings: %s factions", 3f, highlight, "${snapshot.pack.reputations.size}")
         addPara("Hotbar: %s slots", 3f, highlight, "${snapshot.pack.hotbar.assignedCount()}")
         val bp = snapshot.blueprints
-        addPara(
-            "Known: %s ship, %s fighter and %s weapon blueprints, %s hull mods",
-            3f, highlight, "${bp.ships.size}", "${bp.fighters.size}", "${bp.weapons.size}", "${bp.hullMods.size}",
-        )
+        if (snapshot.blueprintsSaved) {
+            addPara(
+                "Known: %s ship, %s fighter and %s weapon blueprints, %s hull mods",
+                3f, highlight, "${bp.ships.size}", "${bp.fighters.size}", "${bp.weapons.size}", "${bp.hullMods.size}",
+            )
+        } else {
+            addPara("Known blueprints and hull mods: not saved", gray, 3f)
+        }
     }
 
     private fun skillList(skills: Map<String, Float>): String = skills.entries.joinToString(", ") { (id, level) ->

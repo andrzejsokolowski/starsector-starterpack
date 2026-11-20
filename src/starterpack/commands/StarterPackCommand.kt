@@ -162,9 +162,26 @@ class StarterPackCommand : BaseCommand {
                 CommandResult.SUCCESS
             }
             "apply" -> snapshotApply(name, rest.any { it.equals("force", ignoreCase = true) }, context)
+            "blueprints" -> snapshotBlueprints(rest.getOrNull(1))
             "save" -> snapshotSave(rest.drop(1).joinToString(" "), context)
             else -> snapshotSave(rest.joinToString(" "), context)
         }
+    }
+
+    /** `starterpack snapshot blueprints [on|off]`: whether new snapshots save known blueprints. */
+    private fun snapshotBlueprints(value: String?): CommandResult {
+        when (value?.lowercase()) {
+            "on" -> SnapshotStore.setSaveBlueprints(true)
+            "off" -> SnapshotStore.setSaveBlueprints(false)
+            null -> {}
+            else -> {
+                Console.showMessage("StarterPack: use 'starterpack snapshot blueprints on' or 'off'.")
+                return CommandResult.BAD_SYNTAX
+            }
+        }
+        val state = if (SnapshotStore.isSaveBlueprints()) "save" else "do not save"
+        Console.showMessage("StarterPack: new snapshots $state known blueprints and hull mods.")
+        return CommandResult.SUCCESS
     }
 
     private fun snapshotSave(name: String, context: CommandContext): CommandResult {
@@ -185,6 +202,9 @@ class StarterPackCommand : BaseCommand {
         }
         val stored = SnapshotStore.add(snapshot)
         Console.showMessage("StarterPack: saved snapshot \"${stored.name}\" -- ${stored.summary()}")
+        if (!stored.blueprintsSaved) {
+            Console.showMessage("Known blueprints and hull mods were not saved ('starterpack snapshot blueprints on').")
+        }
         if (result.warnings.isNotEmpty()) {
             Console.showMessage("${result.warnings.size} thing(s) were left out:")
             result.warnings.forEach { Console.showMessage("  - $it") }

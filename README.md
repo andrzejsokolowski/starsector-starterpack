@@ -96,7 +96,7 @@ the campaign as it is now. Without OddiszCommons, run `starterpack snapshot` in 
 | **Character** | Level, experience, skills, unspent skill points, story points and the bonus experience still owed for spent story points. |
 | **Reputation** | Your standing with every faction. |
 | **Hotbar** | All five bars and every ability you know. |
-| **Blueprints** | Every ship, fighter and weapon blueprint and every hull mod you know. Applying only adds; nothing the new game knows is forgotten. |
+| **Blueprints** | Every ship, fighter and weapon blueprint and every hull mod you know, while *Save known blueprints and hull mods* is ticked (the default). Applying only adds; nothing the new game knows is forgotten. |
 
 Left out on purpose, because they belong to the old sector: colonies, storage at markets, contacts,
 quests and commissions. Hull mods the game hides are left out too: other mods put them on and keep
@@ -128,6 +128,7 @@ starterpack snapshot list                 every saved snapshot
 starterpack snapshot use <name>           start every new game from it
 starterpack snapshot off                  stop starting new games from a snapshot
 starterpack snapshot apply <name> [force] apply a snapshot to this campaign now
+starterpack snapshot blueprints on / off  whether new snapshots save known blueprints
 ```
 
 ## Applied once per campaign

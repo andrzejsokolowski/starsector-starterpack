@@ -32,6 +32,9 @@ object SnapshotStore {
     /** Name of the snapshot that applies to new games, or blank for none. */
     private var armedName: String = ""
 
+    /** Whether new snapshots save the known blueprints and hull mods (1.6.0). Kept between sessions. */
+    private var saveBlueprints: Boolean = true
+
     private var loaded = false
 
     // --- Load / save ---------------------------------------------------------------------------
@@ -56,6 +59,7 @@ object SnapshotStore {
             }
         }
         armedName = json.optString("armed", "")
+        saveBlueprints = json.optBoolean("saveBlueprints", true)
     }
 
     private fun save() {
@@ -64,6 +68,7 @@ object SnapshotStore {
             json.put("version", FORMAT_VERSION)
             json.put("snapshots", JSONArray().also { array -> snapshots.forEach { array.put(it.toJson()) } })
             json.put("armed", armedName)
+            json.put("saveBlueprints", saveBlueprints)
             json.save()
         }.onFailure {
             log.error("StarterPack: could not write $COMMON_FILE; this session's changes are in memory only.", it)
@@ -98,7 +103,18 @@ object SnapshotStore {
 
     fun isArmed(snapshot: Snapshot): Boolean = armed() === snapshot
 
+    fun isSaveBlueprints(): Boolean {
+        ensureLoaded()
+        return saveBlueprints
+    }
+
     // --- Mutations -----------------------------------------------------------------------------
+
+    fun setSaveBlueprints(enabled: Boolean) {
+        ensureLoaded()
+        saveBlueprints = enabled
+        save()
+    }
 
     /** Sets the snapshot new games start from, or clears it with null. */
     fun setArmed(snapshot: Snapshot?) {

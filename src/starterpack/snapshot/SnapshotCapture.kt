@@ -21,6 +21,7 @@ import starterpack.model.OfficerEntry
 import starterpack.model.ShipEntry
 import starterpack.model.Snapshot
 import starterpack.model.SpecialItem
+import starterpack.store.SnapshotStore
 import java.time.LocalDate
 import java.util.IdentityHashMap
 
@@ -51,7 +52,11 @@ object SnapshotCapture {
 
     private val log = Global.getLogger(SnapshotCapture::class.java)
 
-    fun capture(name: String? = null): CaptureResult {
+    /**
+     * [saveBlueprints] off leaves the known blueprints and hull mods out, for a new game plus that
+     * finds them again. It follows the player's switch unless told otherwise.
+     */
+    fun capture(name: String? = null, saveBlueprints: Boolean = SnapshotStore.isSaveBlueprints()): CaptureResult {
         val sector = Global.getSector() ?: return CaptureResult(failure = "No campaign is running.")
         val fleet = sector.playerFleet ?: return CaptureResult(failure = "There is no player fleet to copy.")
 
@@ -100,8 +105,11 @@ object SnapshotCapture {
             .onFailure { warnings += "The hotbar could not be copied: ${it.message}" }
 
         // --- Blueprints ----------------------------------------------------------------------
-        runCatching { snapshot.blueprints = blueprintsOf(sector) }
-            .onFailure { warnings += "Blueprints could not be copied: ${it.message}" }
+        snapshot.blueprintsSaved = saveBlueprints
+        if (saveBlueprints) {
+            runCatching { snapshot.blueprints = blueprintsOf(sector) }
+                .onFailure { warnings += "Blueprints could not be copied: ${it.message}" }
+        }
 
         log.info("StarterPack: took snapshot \"${snapshot.name}\" -- ${snapshot.summary()}")
         warnings.forEach { log.warn("StarterPack: $it") }

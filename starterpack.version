@@ -6,8 +6,8 @@
     "modVersion":
     {
         "major":1,
-        "minor":5,
-        "patch":"1"
+        "minor":6,
+        "patch":"0"
     },
     "starsectorVersion":"0.98.5a-RC4",
     "directDownloadURL":"https://github.com/andrzejsokolowski/starsector-starterpack/releases/latest/download/StarterPack.zip"
