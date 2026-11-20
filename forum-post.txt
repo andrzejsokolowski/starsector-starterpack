@@ -68,7 +68,7 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [hr][center][size=12pt][b]Snapshots: New Game Plus[/b][/size][/center][hr]
 [list]
 [li]Save the campaign you are playing as a [b]snapshot[/b], and start new games from it. Snapshots are kept apart from templates.[/li]
-[li]Save one on the [b]StarterPack[/b] tab of the [b]Manage (Y)[/b] screen (with OddiszCommons), or with [b]starterpack snapshot[/b] in the console. [b]Save over it[/b] updates an older one.[/li]
+[li]Save one on the [b]Manage (Y)[/b] screen, [b]Others[/b] tab, [b]StarterPack[/b] (with OddiszCommons 1.1.0 or newer), or with [b]starterpack snapshot[/b] in the console. [b]Save over it[/b] updates an older one.[/li]
 [li]It keeps [b]every ship[/b] with its loadout, modules, S-mods, D-mods and weapon groups, the flagship and the mothballed ships. Ships start repaired.[/li]
 [li][b]Officers[/b] with their portraits, personalities, levels and skills, on the ships they captained, and [b]AI core captains[/b] with theirs.[/li]
 [li]Your [b]cargo and credits[/b], [b]level, skills, unspent and story points[/b], [b]standing with every faction[/b], [b]hotbar[/b], and every [b]blueprint and hull mod[/b] you know.[/li]
@@ -122,6 +122,9 @@ The UIFramework code by Starficz inside it keeps its own licence (LGPL-3.0).
 [/spoiler]
 
 [spoiler=Version log]
+1.5.1
+Snapshots moved from their own tab on the Manage (Y) screen to its shared Others tab (needs OddiszCommons 1.1.0).
+
 1.5.0
 Snapshots, a new game plus: save a running campaign and start new games from it. A snapshot keeps your fleet with its loadouts, officers and AI core captains, mothballed ships, cargo, credits, level, skills, unspent and story points, faction standings, hotbar, and the blueprints and hull mods you know. Ships start repaired.
 Save one on the StarterPack tab of the Manage (Y) screen when OddiszCommons is installed (optional), or with "starterpack snapshot" in the console.

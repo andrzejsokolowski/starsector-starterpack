@@ -1,3 +1,6 @@
+Version 1.5.1 (2026-11-20)
+- Snapshots moved from their own tab on the Manage (Y) screen to its shared Others tab, under StarterPack. Needs OddiszCommons 1.1.0 or newer; with an older one, use "starterpack snapshot" in the console.
+
 Version 1.5.0 (2026-11-20)
 - Snapshots, a new game plus: save a running campaign and start new games from it. A snapshot keeps your fleet with its loadouts, officers and AI core captains, mothballed ships, cargo, credits, level, skills, unspent and story points, faction standings, hotbar, and the blueprints and hull mods you know. Ships start repaired.
 - Save one on the StarterPack tab of the Manage (Y) screen when OddiszCommons is installed (optional), or with "starterpack snapshot" in the console.

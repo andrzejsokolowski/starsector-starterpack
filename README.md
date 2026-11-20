@@ -81,8 +81,8 @@ will not strip them off a ship that already has them.
 A snapshot is a copy of a running campaign that a new game can start from. It is kept apart from
 the templates: templates are built by hand in the editor, snapshots are taken in a campaign.
 
-**Taking one.** With OddiszCommons installed, open the **Manage (Y)** screen in the campaign, go to
-the **StarterPack** tab and press **SAVE A SNAPSHOT**. *Save over it* replaces an older snapshot with
+**Taking one.** With OddiszCommons 1.1.0 or newer installed, open the **Manage (Y)** screen in the
+campaign, go to the **Others** tab, pick **StarterPack** in its list and press **SAVE A SNAPSHOT**. *Save over it* replaces an older snapshot with
 the campaign as it is now. Without OddiszCommons, run `starterpack snapshot` in the console.
 
 **What it keeps:**
@@ -150,7 +150,7 @@ moment the mod comes back.
 - Starsector 0.98.5a
 - LazyLib
 - Console Commands (optional)
-- OddiszCommons (optional, for saving snapshots from the Manage screen)
+- OddiszCommons 1.1.0 or newer (optional, for saving snapshots from the Manage screen)
 
 ## Credits
 

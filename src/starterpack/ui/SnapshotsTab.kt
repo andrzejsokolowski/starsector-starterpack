@@ -44,8 +44,8 @@ object SnapshotsTab {
         val snapshots = SnapshotStore.all()
         if (snapshots.isEmpty()) {
             addPara(
-                "No snapshots yet. In a campaign, save one on the StarterPack tab of the Manage (Y) " +
-                    "screen (needs OddiszCommons), or run %s in the console.",
+                "No snapshots yet. In a campaign, save one on the Manage (Y) screen, Others tab, " +
+                    "StarterPack (needs OddiszCommons), or run %s in the console.",
                 8f, Misc.getGrayColor(), Misc.getHighlightColor(), "starterpack snapshot",
             )
             return

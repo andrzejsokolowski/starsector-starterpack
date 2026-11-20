@@ -20,8 +20,9 @@ import starterpack.uiframework.setPlugin
 import kotlin.math.min
 
 /**
- * The StarterPack tab on OddiszCommons' Manage (Y) screen: where a snapshot of the running campaign
- * is taken, saved over, set for new games, or deleted.
+ * StarterPack's page in the Others tab of OddiszCommons' Manage (Y) screen: where a snapshot of the
+ * running campaign is taken, saved over, set for new games, or deleted. It sits in the shared Others
+ * tab (OddiszCommons 1.1.0) rather than a tab of its own, which Andrzej keeps for bigger mods.
  *
  * This is the only class that names OddiszCommons. [register] is reached only when that mod is
  * enabled, so without it nothing here is ever loaded, and the console's `starterpack snapshot` is
@@ -81,7 +82,7 @@ class SnapshotPage : ManagePage {
     }
 
     private fun TooltipMakerAPI.content(inner: Float) {
-        addSectionHeading("StarterPack snapshots", Alignment.MID, 0f)
+        addSectionHeading("Snapshots", Alignment.MID, 0f)
         addPara(
             "Saves your fleet, officers, cargo, credits, character, faction standings, hotbar and " +
                 "blueprints. A new game can start from it.",
@@ -177,13 +178,24 @@ class SnapshotPage : ManagePage {
         confirmKey == key && System.currentTimeMillis() - confirmAt < CONFIRM_MS
 
     companion object {
-        const val TAB_NAME = "StarterPack"
+        /** The name in the Others tab's list. */
+        const val LIST_NAME = "StarterPack"
         private const val CONFIRM_MS = 4_000L
 
-        /** Adds the tab. Call only when OddiszCommons is enabled. */
+        /**
+         * Joins the Others tab. Call only when OddiszCommons is enabled. An OddiszCommons older than
+         * 1.1.0 has no Others tab: then there is no page, and the console takes snapshots.
+         */
         @JvmStatic
         fun register() {
-            Manage.addPage(StarterPackModPlugin.MOD_ID, TAB_NAME, SnapshotPage())
+            try {
+                Manage.addOtherPage(StarterPackModPlugin.MOD_ID, LIST_NAME, SnapshotPage())
+            } catch (old: NoSuchMethodError) {
+                Global.getLogger(SnapshotPage::class.java).warn(
+                    "StarterPack: OddiszCommons is older than 1.1.0 and has no Others tab. Update it to save " +
+                        "snapshots from the Manage screen; 'starterpack snapshot' in the console works meanwhile."
+                )
+            }
         }
     }
 }
