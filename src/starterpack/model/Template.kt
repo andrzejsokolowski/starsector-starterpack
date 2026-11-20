@@ -441,11 +441,11 @@ class Hotbar(
 // org.json has no generics and returns raw types, so these keep the casts and the null handling in
 // one place rather than smeared through every fromJson above.
 
-private fun JSONObject.putIdsIfAny(key: String, ids: List<String>) {
+internal fun JSONObject.putIdsIfAny(key: String, ids: List<String>) {
     if (ids.isNotEmpty()) put(key, JSONArray(ids))
 }
 
-private fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): MutableList<T> {
+internal fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): MutableList<T> {
     val out = ArrayList<T>()
     val array = this ?: return out
     for (i in 0 until array.length()) {
@@ -454,7 +454,7 @@ private fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): MutableList
     return out
 }
 
-private fun JSONArray?.toIdList(): MutableList<String> {
+internal fun JSONArray?.toIdList(): MutableList<String> {
     val out = ArrayList<String>()
     val array = this ?: return out
     for (i in 0 until array.length()) {
@@ -505,7 +505,7 @@ private fun JSONObject?.toEntryMap(): MutableMap<String, ShipEntry> {
     return out
 }
 
-private fun JSONObject?.toStringMap(): MutableMap<String, String> {
+internal fun JSONObject?.toStringMap(): MutableMap<String, String> {
     val out = LinkedHashMap<String, String>()
     val json = this ?: return out
     val keys = json.keys()
@@ -517,7 +517,7 @@ private fun JSONObject?.toStringMap(): MutableMap<String, String> {
     return out
 }
 
-private fun JSONObject?.toIntMap(): MutableMap<String, Int> {
+internal fun JSONObject?.toIntMap(): MutableMap<String, Int> {
     val out = LinkedHashMap<String, Int>()
     val json = this ?: return out
     val keys = json.keys()
@@ -528,7 +528,7 @@ private fun JSONObject?.toIntMap(): MutableMap<String, Int> {
     return out
 }
 
-private fun JSONObject?.toFloatMap(): MutableMap<String, Float> {
+internal fun JSONObject?.toFloatMap(): MutableMap<String, Float> {
     val out = LinkedHashMap<String, Float>()
     val json = this ?: return out
     val keys = json.keys()

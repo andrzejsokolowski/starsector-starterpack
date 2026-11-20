@@ -1,3 +1,9 @@
+Version 1.5.0 (2026-11-20)
+- Snapshots, a new game plus: save a running campaign and start new games from it. A snapshot keeps your fleet with its loadouts, officers and AI core captains, mothballed ships, cargo, credits, level, skills, unspent and story points, faction standings, hotbar, and the blueprints and hull mods you know. Ships start repaired.
+- Save one on the StarterPack tab of the Manage (Y) screen when OddiszCommons is installed (optional), or with "starterpack snapshot" in the console.
+- Snapshots are kept apart from templates, on a new SNAPSHOTS tab in the main menu window: see what each holds, rename, delete, or start every new game from one. That snapshot applies instead of the active template.
+- Fixed ships with D-mods not coming back from the refit bench.
+
 Version 1.4.0 (2026-11-15)
 - Updated for Starsector 0.98.5a.
 

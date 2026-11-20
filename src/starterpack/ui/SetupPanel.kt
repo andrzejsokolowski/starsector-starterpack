@@ -10,6 +10,7 @@ import starterpack.MenuButton
 import starterpack.bench.BenchState
 import starterpack.catalog.CatalogEntry
 import starterpack.model.Template
+import starterpack.store.SnapshotStore
 import starterpack.store.TemplateStore
 import starterpack.uiframework.CustomPanel
 import starterpack.uiframework.Font
@@ -27,7 +28,12 @@ enum class Tab(val label: String) {
     CARGO("CARGO"),
     CHARACTER("CHARACTER"),
     HOTBAR("HOTBAR"),
+    /** Campaigns saved for a new game plus. Not part of any template. */
+    SNAPSHOTS("SNAPSHOTS"),
 }
+
+/** The tabs that work without a template selected. */
+private val Tab.standsAlone: Boolean get() = this == Tab.TEMPLATES || this == Tab.SNAPSHOTS
 
 /**
  * The starter-pack editor: one window on the title screen, five tabs, one template being edited.
@@ -52,7 +58,7 @@ object SetupPanel {
 
     private const val PAD = 12f
     private const val HEADER_H = 38f
-    private const val FOOTER_H = 34f
+    private const val FOOTER_H = 52f
     private const val TAB_GAP = 6f
     private const val CLOSE_W = 100f
 
@@ -76,6 +82,7 @@ object SetupPanel {
 
     private var dirty = false
     private var saveNeeded = false
+    private var snapshotSaveNeeded = false
 
     /**
      * Whether the caret was in one of our text fields last frame.
@@ -190,6 +197,8 @@ object SetupPanel {
         // you typed because you closed the window instead of clicking away first.
         if (saveNeeded) runCatching { TemplateStore.flush() }
         saveNeeded = false
+        if (snapshotSaveNeeded) runCatching { SnapshotStore.flush() }
+        snapshotSaveNeeded = false
 
         root = null
         headerHost = null
@@ -222,6 +231,10 @@ object SetupPanel {
             saveNeeded = false
             runCatching { TemplateStore.flush() }
         }
+        if (snapshotSaveNeeded && !fieldFocused) {
+            snapshotSaveNeeded = false
+            runCatching { SnapshotStore.flush() }
+        }
 
         PickerOverlay.tick()
 
@@ -241,6 +254,11 @@ object SetupPanel {
     /** Note that the model changed but the view is still correct -- flush once the caret leaves. */
     fun markSaveNeeded() {
         saveNeeded = true
+    }
+
+    /** The same for the snapshot store, which is written separately. */
+    fun markSnapshotSaveNeeded() {
+        snapshotSaveNeeded = true
     }
 
     /** Mutates the template, persists it, and rebuilds. The normal path for every structural edit. */
@@ -277,7 +295,7 @@ object SetupPanel {
         for (entry in Tab.entries) {
             // The tabs that edit a template are meaningless without one, so clicking them does
             // nothing until the store has something in it.
-            val usable = entry == Tab.TEMPLATES || template != null
+            val usable = entry.standsAlone || template != null
             host.tabButton(x, 0f, tabWidth, HEADER_H - 4f, entry.label, entry == tab) {
                 if (usable && tab != entry) {
                     tab = entry
@@ -299,7 +317,7 @@ object SetupPanel {
         host.clearChildren()
         bindings.clear()
 
-        if (template == null && tab != Tab.TEMPLATES) tab = Tab.TEMPLATES
+        if (template == null && !tab.standsAlone) tab = Tab.TEMPLATES
 
         // A tab that throws leaves the tab strip alive so you can switch away from it, rather than
         // taking the window down with it.
@@ -310,6 +328,7 @@ object SetupPanel {
                 Tab.CARGO -> CargoTab.build(host, contentWidth, contentHeight)
                 Tab.CHARACTER -> CharacterTab.build(host, contentWidth, contentHeight)
                 Tab.HOTBAR -> HotbarTab.build(host, contentWidth, contentHeight)
+                Tab.SNAPSHOTS -> SnapshotsTab.build(host, contentWidth, contentHeight)
             }
         }.onFailure { failure ->
             Global.getLogger(SetupPanel::class.java)
@@ -346,6 +365,12 @@ object SetupPanel {
                 "Active: %s   |   Auto-apply on new game: %s   |   Saved to %s",
                 2f, Misc.getHighlightColor(), active, auto, TemplateStore.location(),
             )
+            SnapshotStore.armed()?.let { snapshot ->
+                addPara(
+                    "New games start from the snapshot %s instead.",
+                    2f, Misc.getPositiveHighlightColor(), snapshot.name,
+                )
+            }
             if (status.isNotBlank()) addPara(status, Misc.getGrayColor(), 2f)
         }
     }

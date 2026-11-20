@@ -6,6 +6,9 @@ Made for testing. If you start a lot of campaigns and spend the first ten minute
 the same three ships, fitting the same weapons and spending the same skill points, this does that
 part for you.
 
+It also makes a new game plus: save a campaign you are playing as a [snapshot](#snapshots-a-new-game-plus),
+and the next new game starts with that fleet, character and cargo.
+
 ## How it works
 
 1. **Main menu → STARTER PACK.** The editor opens over the title screen. No campaign needed.
@@ -73,6 +76,40 @@ Adding and removing ships stays in the editor — a mission's fleet is fixed by 
 and free built-ins also stay in the editor, since the refit screen cannot grant either, though it
 will not strip them off a ship that already has them.
 
+## Snapshots: a new game plus
+
+A snapshot is a copy of a running campaign that a new game can start from. It is kept apart from
+the templates: templates are built by hand in the editor, snapshots are taken in a campaign.
+
+**Taking one.** With OddiszCommons installed, open the **Manage (Y)** screen in the campaign, go to
+the **StarterPack** tab and press **SAVE A SNAPSHOT**. *Save over it* replaces an older snapshot with
+the campaign as it is now. Without OddiszCommons, run `starterpack snapshot` in the console.
+
+**What it keeps:**
+
+| | |
+|---|---|
+| **Fleet** | Every ship with its name, loadout, modules, S-mods, D-mods and weapon groups, the flagship, and which ships were mothballed. Ships start repaired. |
+| **Officers** | Name, portrait, personality, level, experience and skills, on the ship they captained. Mentored and exceptional officers stay that way. Mercenaries come along as regular officers. |
+| **AI core captains** | The core on each ship, with its level and skills. |
+| **Cargo** | Everything in the fleet's hold, and your credits. |
+| **Character** | Level, experience, skills, unspent skill points, story points and the bonus experience still owed for spent story points. |
+| **Reputation** | Your standing with every faction. |
+| **Hotbar** | All five bars and every ability you know. |
+| **Blueprints** | Every ship, fighter and weapon blueprint and every hull mod you know. Applying only adds; nothing the new game knows is forgotten. |
+
+Left out on purpose, because they belong to the old sector: colonies, storage at markets, contacts,
+quests and commissions. Hull mods the game hides are left out too: other mods put them on and keep
+what they mean elsewhere in the save. The perks of New Game Plus - Renewed stay behind, since they
+are bought for each campaign. Your name and portrait are the ones you pick for the new game.
+
+**Starting from one.** Main menu, STARTER PACK, **SNAPSHOTS** tab: tick *Start every new game from
+this snapshot*. Every new game then gets it laid over the start, instead of the active template,
+once per campaign like a template. The tab also shows what each snapshot holds, and renames or
+deletes them. `starterpack snapshot apply <name>` applies one to a campaign that is already running.
+
+Snapshots live in `saves/common/starterpack/snapshots.json`, next to the templates.
+
 ## Console commands
 
 Console Commands is optional. Without it, use the auto-apply toggle.
@@ -85,6 +122,12 @@ starterpack list                 every saved template
 starterpack info <name>          what a template contains
 starterpack status               active template, auto-apply state, this save's history
 starterpack on / off             toggle auto-apply
+
+starterpack snapshot [name]               save this campaign as a snapshot
+starterpack snapshot list                 every saved snapshot
+starterpack snapshot use <name>           start every new game from it
+starterpack snapshot off                  stop starting new games from a snapshot
+starterpack snapshot apply <name> [force] apply a snapshot to this campaign now
 ```
 
 ## Applied once per campaign
@@ -107,6 +150,7 @@ moment the mod comes back.
 - Starsector 0.98.5a
 - LazyLib
 - Console Commands (optional)
+- OddiszCommons (optional, for saving snapshots from the Manage screen)
 
 ## Credits
 

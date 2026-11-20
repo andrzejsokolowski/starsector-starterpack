@@ -93,7 +93,16 @@ object TemplateApplier {
     fun appliedTemplateName(): String? =
         Global.getSector()?.persistentData?.get(APPLIED_KEY) as? String
 
-    fun apply(template: Template, force: Boolean = false): ApplyResult {
+    /**
+     * [onShipBuilt] is told about every ship that made it into the fleet, with its index in
+     * [Template.ships], so a snapshot can put its officers back on the right hulls.
+     */
+    @JvmOverloads
+    fun apply(
+        template: Template,
+        force: Boolean = false,
+        onShipBuilt: ((index: Int, member: FleetMemberAPI) -> Unit)? = null,
+    ): ApplyResult {
         val sector = Global.getSector()
             ?: return ApplyResult(failure = "No campaign is running.")
         if (hasBeenApplied() && !force) {
@@ -117,10 +126,11 @@ object TemplateApplier {
         if (template.replaceFleet && template.ships.isNotEmpty()) clearFleet(fleet)
 
         var flagshipAssigned = false
-        for (entry in template.ships) {
+        for ((index, entry) in template.ships.withIndex()) {
             val member = buildMember(entry, warnings) ?: continue
             fleet.fleetData.addFleetMember(member)
             shipsAdded++
+            onShipBuilt?.let { callback -> runCatching { callback(index, member) } }
             // Only the first flagged entry wins; a template with two flagships is a hand-edit slip,
             // and silently promoting the last one would be surprising.
             if (entry.flagship && !flagshipAssigned) {

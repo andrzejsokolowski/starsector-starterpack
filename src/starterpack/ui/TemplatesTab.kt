@@ -4,6 +4,7 @@ import com.fs.starfarer.api.ui.Alignment
 import com.fs.starfarer.api.ui.CustomPanelAPI
 import com.fs.starfarer.api.util.Misc
 import starterpack.model.Template
+import starterpack.store.SnapshotStore
 import starterpack.store.TemplateStore
 
 /**
@@ -126,6 +127,12 @@ object TemplatesTab {
         ) {
             TemplateStore.setAutoApply(!TemplateStore.isAutoApplyEnabled())
             SetupPanel.markDirty()
+        }
+        SnapshotStore.armed()?.let { snapshot ->
+            addPara(
+                "New games start from the snapshot %s instead, set on the SNAPSHOTS tab.",
+                6f, Misc.getPositiveHighlightColor(), snapshot.name,
+            )
         }
         addPara(
             "With this off, run %s in the console once your new campaign has started. Either way it " +

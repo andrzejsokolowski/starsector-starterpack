@@ -10,6 +10,7 @@ WHAT DOES THIS MOD DO?
 
 Do you start a lot of campaigns? Do you spend the first ten minutes of each one buying the same three ships, bolting on the same weapons, spending the same skill points and dragging the same abilities onto the same hotbar keys?
 Do it once. Save it. Every new game after that starts with it already done.
+Or play a campaign, save it as a snapshot, and start the next new game from it: a new game plus.
 
 Ships with their weapons, fighters, hullmods, S-mods and D-mods. Your cargo, your credits, your skill points, your story points, your standing with every faction. All five hotbar rows, ten slots each, hyperspace overrides included.
 Made for testing, and unashamed about it. This is a cheat mod. That is the point.
@@ -17,7 +18,7 @@ Made for testing, and unashamed about it. This is a cheat mod. That is the point
 
 
 Templates are stored per installation, not per save. Delete every campaign you own and they are still there.
-[color=red]Requires [b]LazyLib[/b]. Console Commands is optional.[/color]
+[color=red]Requires [b]LazyLib[/b]. Console Commands and OddiszCommons are optional.[/color]
 [/b][/center]
 [spoiler=Screenshots]
 [center][img]https://github.com/andrzejsokolowski/starsector-starterpack/blob/main/starter1.png?raw=true[/img]
@@ -32,7 +33,7 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [td][hr][center][size=12pt][b]The Editor[/b][/size][/center][hr]
 [list]
 [li]Adds a [b]STARTER PACK[/b] button to the bottom right of the main menu. No campaign needed, no save to load.[/li]
-[li]Five tabs: [b]Templates[/b], [b]Ships[/b], [b]Cargo[/b], [b]Character[/b], [b]Hotbar[/b].[/li]
+[li]Six tabs: [b]Templates[/b], [b]Ships[/b], [b]Cargo[/b], [b]Character[/b], [b]Hotbar[/b], and [b]Snapshots[/b] for the campaigns you saved.[/li]
 [li]Keep as many templates as you like and switch which one is active. Duplicate one to make a variant without rebuilding it.[/li]
 [li]Every picker is [b]searchable[/b] and matches name, id and source mod, with the game's own description and sprite on hover. It reads your whole modlist, so modded content is in there on equal footing.[/li]
 [li]Anything that no longer resolves when the pack is applied -- a weapon from a mod you turned off -- is [b]reported by name and skipped[/b]. The rest of the template still applies, and the id starts working again the moment the mod comes back.[/li]
@@ -64,16 +65,26 @@ Templates are stored per installation, not per save. Delete every campaign you o
 [li][b]Reputation[/b]: one standing for every faction at once, then single factions on top of it. Everyone neutral but the pirates hostile is two rows, not a console command per faction.[/li]
 [li][b]Hotbar[/b]: all five bars, ten slots each, with a separate [b]hyperspace override[/b] per slot. Anything you slot is also taught to your character, so the key works the moment the campaign starts.[/li]
 [/list]
+[hr][center][size=12pt][b]Snapshots: New Game Plus[/b][/size][/center][hr]
+[list]
+[li]Save the campaign you are playing as a [b]snapshot[/b], and start new games from it. Snapshots are kept apart from templates.[/li]
+[li]Save one on the [b]StarterPack[/b] tab of the [b]Manage (Y)[/b] screen (with OddiszCommons), or with [b]starterpack snapshot[/b] in the console. [b]Save over it[/b] updates an older one.[/li]
+[li]It keeps [b]every ship[/b] with its loadout, modules, S-mods, D-mods and weapon groups, the flagship and the mothballed ships. Ships start repaired.[/li]
+[li][b]Officers[/b] with their portraits, personalities, levels and skills, on the ships they captained, and [b]AI core captains[/b] with theirs.[/li]
+[li]Your [b]cargo and credits[/b], [b]level, skills, unspent and story points[/b], [b]standing with every faction[/b], [b]hotbar[/b], and every [b]blueprint and hull mod[/b] you know.[/li]
+[li]Colonies, storage, contacts and quests belong to the old sector and stay there.[/li]
+[li]On the main menu's [b]Snapshots[/b] tab, tick [b]Start every new game from this snapshot[/b]. It applies instead of your template, once per campaign.[/li]
+[/list]
 [hr][center][size=12pt][b]How It Gets Applied[/b][/size][/center][hr]
 [list]
 [li]Tick [b]Apply automatically on new game[/b] and forget about it, or run [b]starterpack[/b] in the console once the campaign has started. Console Commands is optional; without it, use the toggle.[/li]
 [li][b]Once per campaign.[/b] A flag in the save records that a pack was applied, so you can't accidentally double your credits and re-add your fleet. Add [b]force[/b] to override it.[/li]
 [li]Whether applying [b]replaces[/b] your starting fleet and hold or [b]adds[/b] to them is per template. Both default to replacing.[/li]
-[li]Console: [b]list[/b], [b]info <name>[/b], [b]status[/b], [b]apply <name>[/b], [b]on[/b] / [b]off[/b].[/li]
+[li]Console: [b]list[/b], [b]info <name>[/b], [b]status[/b], [b]apply <name>[/b], [b]on[/b] / [b]off[/b], and [b]snapshot[/b], [b]snapshot list[/b], [b]snapshot use <name>[/b], [b]snapshot off[/b], [b]snapshot apply <name>[/b].[/li]
 [/list]
 [hr][center][size=12pt][b]Storage[/b][/size][/center][hr]
 [list]
-[li]Saved to [b]saves/common/starterpack/templates.json[/b], shared by every save you ever make.[/li]
+[li]Saved to [b]saves/common/starterpack/templates.json[/b] and [b]snapshots.json[/b], shared by every save you ever make.[/li]
 [li]Nothing is written into a savegame except the one "already applied" flag, so adding or removing the mod can't corrupt one.[/li]
 [li]Stored as plain ids in plain JSON. Hand-edit it if you'd rather.[/li]
 [/list]
@@ -92,11 +103,11 @@ The rest of the template applies and the missing pieces are listed by name. Thei
 [b]Does it work with modded ships and weapons?[/b]
 That's most of the point. Everything in the pickers comes from your installed specs, whatever their source.
 [b]Officers?[/b]
-No. Ships come in unofficered on purpose -- officer generation is its own can of worms and I'd rather this stayed reliable.
+Snapshots keep them, skills and all. Templates don't have officers: their ships come in unofficered.
 [b]Is this cheating?[/b]
 Yes. It hands you a fleet, money and story points on request. It's a testing tool that happens to be fun.
-[b]Why build a whole editor instead of capturing my current fleet?[/b]
-Because you usually want the pack to be the fleet you [i]wish[/i] you had, not the one you're flying. Loading a stock loadout gets you most of the way in one click anyway.
+[b]Can I take my current campaign into a new game?[/b]
+Yes, that is what snapshots are for. Templates are for the fleet you [i]wish[/i] you had; a snapshot is the one you are flying.
 [/spoiler]
 [spoiler=AI use disclaimer]Some or all assets and code in this mod were created using AI tools:
 [list]
@@ -111,6 +122,12 @@ The UIFramework code by Starficz inside it keeps its own licence (LGPL-3.0).
 [/spoiler]
 
 [spoiler=Version log]
+1.5.0
+Snapshots, a new game plus: save a running campaign and start new games from it. A snapshot keeps your fleet with its loadouts, officers and AI core captains, mothballed ships, cargo, credits, level, skills, unspent and story points, faction standings, hotbar, and the blueprints and hull mods you know. Ships start repaired.
+Save one on the StarterPack tab of the Manage (Y) screen when OddiszCommons is installed (optional), or with "starterpack snapshot" in the console.
+Snapshots are kept apart from templates, on a new SNAPSHOTS tab in the main menu window: see what each holds, rename, delete, or start every new game from one. That snapshot applies instead of the active template.
+Fixed ships with D-mods not coming back from the refit bench.
+
 1.4.0
 Updated for Starsector 0.98.5a.
 

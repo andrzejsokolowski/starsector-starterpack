@@ -94,7 +94,7 @@ object BenchImport {
     private fun hullsMatch(fromVariant: String, fromTemplate: String): Boolean {
         if (fromVariant.isEmpty() || fromTemplate.isEmpty()) return false
         if (fromVariant == fromTemplate) return true
-        return fromVariant.removeSuffix(D_HULL_SUFFIX) == fromTemplate.removeSuffix(D_HULL_SUFFIX)
+        return baseHullId(fromVariant) == baseHullId(fromTemplate)
     }
 
     /**
@@ -220,7 +220,7 @@ object BenchImport {
 
             val loadout = moduleLoadoutOf(module)
             val stockHull = Catalog.moduleHullId(stockId).orEmpty()
-            if (loadout.hullId.removeSuffix(D_HULL_SUFFIX) != stockHull.removeSuffix(D_HULL_SUFFIX)) {
+            if (baseHullId(loadout.hullId) != baseHullId(stockHull)) {
                 warnings += "Module ${index + 1} on '${entry.hullId}' came back as a different part; " +
                     "its refit was not kept."
                 continue
@@ -289,8 +289,18 @@ object BenchImport {
         return result
     }
 
-    /** Suffix the game appends when a hull is swapped to its damaged version. */
-    private const val D_HULL_SUFFIX = "_D"
+    /**
+     * The hull a damaged hull was made from.
+     *
+     * The game names a hull's damaged version `<hull>_default_D` (`Misc.D_HULL_SUFFIX`). Until 1.5.0
+     * only `_D` was stripped here, which left `<hull>_default`, so a ship carrying D-mods never
+     * matched its template ship and the bench skipped it. The bare `_D` is still stripped after, for
+     * hulls a mod ships with a damaged version of its own.
+     */
+    fun baseHullId(hullId: String): String = hullId.removeSuffix(D_HULL_SUFFIX).removeSuffix(OLD_D_HULL_SUFFIX)
+
+    private const val D_HULL_SUFFIX = "_default_D"
+    private const val OLD_D_HULL_SUFFIX = "_D"
 
     private val log = Global.getLogger(BenchImport::class.java)
 }
